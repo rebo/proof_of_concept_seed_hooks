@@ -1,6 +1,6 @@
 [package]
-name = "appname"
-version = "0.1.0"
+name = "seed_hooks_poc"
+version = "0.0.1"
 authors = ["Your Name <email@address.com>"]
 edition = "2018"
 

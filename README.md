@@ -14,12 +14,11 @@ fn hook_style_button() -> Node<Msg> {
     // On first execution sets the current button count to zero
     // on subsequent executions retrieves the stored button count
     let button_count = clone_state::<u32>().unwrap_or(0);
-
     
     div![button![
         input_ev("click", move |_| {
             
-            // Incements the u32 count of the components execution state.
+            // Increments the u32 count of the components execution state.
             set_state_with_topo_id::<u32>(button_count + 1, current_id);
 
             // Look Ma No Messages (I have a bad feeling about this...)
