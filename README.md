@@ -43,21 +43,29 @@ fn hook_style_button() -> Node<Msg> {
 
 - topo creates a new execution context for every `[topo::nested]` annoted function, and every `topo::call!` block. Further calls to `topo::root!` re-roots the execution context. The re-rooting allows for consistent execution contexts for the same components as long as you re-root at the start of the base view function. This means that one can store and retrieve local data for an individual component which has been annoted by `topo::nested`.
 
-- currently only 1 type per context is storable, however if you want to store more than 1 String say, you can create a `HashMap<key,String>` and store that.
+- See this awesome talk explaining how topo works: https://www.youtube.com/watch?v=tmM756XZt20
 
-- a type gets stored with : `set_state::<String>(text)` which stores `text` in the component for `String`.
+- a type gets stored with : `set_state::<String>(text)` which stores `text` in the component for the `String` type.
 
 - there are several ways of getting a reference to a stored value. If you are okay with a clone the easiest way is `clone_state::<String>()`. However if you need a reference you need to access the global static `STORE.lock().unwrap().get::<String>()` and deal with the borrow checker issues.
 
+- currently only 1 type per context is storable, however if you want to store more than 1 String say, you can create a `HashMap<key,String>` or `Vec` and store that.
+
 - if you want to set the state from an event callback (quite common) you should use  `set_state_with_topo_id::<String>(text, current_id)` where current_id is obtained in the component itself. The reason for this is that the event callback will not run in the same context as the component. You can do this with `let current_id = topo::Id::current()`.
+
+- I have no idea how 'stable' this pattern is particularly when you might have views iterating all over the place, particulary if you can't be certain of the order they are called in.
 
 **Why would anyone want to do this?**
 
-- I wanted to see what all the fuss is about with React Hooks so thought i'd implement in Seed.
+- I wanted to see what all the fuss is about with React Hooks so thought i'd implement in Seed in a very Hacky way.
 
-- Just sometimes I get put off adjusting my app because of the Msg:: chain chase all over the place to keep track of one simple thing.
+- Just sometimes I get put off adjusting my app because of the Msg:: chain chase all over the place to keep track of one simple thing. I wanted to see if I could somehow have some more isolated changes in one function (component) with stored state.
 
 - Per compoment data means for simple compoents I dont need to pollute the app with non-business logic.
+
+- In theory this might be good, who knows, so lets try...
+
+- This only stores state, which was the main reason I needed it.
 
 **Standard quickstart stuff**
 
