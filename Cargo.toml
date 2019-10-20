@@ -17,7 +17,10 @@ web-sys = "^0.3.19"
 # For serialization, eg sending requests to a server. Otherwise, not required.
 serde = { version = "^1.0.85", features = ['derive'] }
 futures = "^0.1.26"
-
+topo = { path = "../moxie/topo" }
+once_cell = "1.2.0"
+slotmap = "0.4.0"
+anymap = { git = "https://github.com/chris-morgan/anymap" }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2.45" # NOTE: keep in sync with wasm-bindgen version
