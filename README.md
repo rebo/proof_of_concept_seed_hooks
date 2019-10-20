@@ -34,7 +34,7 @@ fn hook_style_button() -> Node<Msg> {
 
 - Dont judge me I was bored this afteroon, this is almost certainly broken and a bad idea
 
-- this 100% uses topo code from Moxie (https://github.com/anp/moxie), cut and pasted into this example because the latest version was not published as a separate crate. 
+- this 100% uses topo code from Moxie (https://github.com/anp/moxie), cut and pasted into this example because the latest version of topo was not published as a separate crate. 
 
 -  The core technology (topo) is 100% the idea and created by the Moxie team, I have nothing to do with them and just wanted to get topo working with seed.
 
