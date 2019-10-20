@@ -15,7 +15,7 @@ fn hook_style_button() -> Node<Msg> {
     // on subsequent executions retrieves the stored button count
     let button_count = clone_state::<u32>().unwrap_or(0);
     
-    div![button![
+    button![
         input_ev("click", move |_| {
             
             // Increments the u32 count of the components execution state.
@@ -25,7 +25,7 @@ fn hook_style_button() -> Node<Msg> {
             Msg::DoNothing
         }),
         format!("Hook State Button × {}", button_count)
-    ]]
+    ]
 }
 ```
 
