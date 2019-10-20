@@ -1,9 +1,65 @@
-# Seed Quickstart
+# EXPERIMENTAL AND PROBABLY BROKEN 
+# React set state Hooks in Seed Proof of concept.
 
-**To get started:**
-- Clone this repo: `git clone https://github.com/david-oconnor/seed-quickstart.git`
+**Example:**
 
-- If you don't have Rust and cargo-make installed, [Download it](https://www.rust-lang.org/tools/install), and run the following commands:
+This is a complete counting button with state, no messages required: 
+
+```rust
+#[topo::nested]
+fn hook_style_button() -> Node<Msg> {
+    // Needed to pass local execution topology to event callback
+    let current_id = topo::Id::current();
+
+    // On first execution sets the current button count to zero
+    // on subsequent executions retrieves the stored button count
+    let button_count = clone_state::<u32>().unwrap_or(0);
+
+    
+    div![button![
+        input_ev("click", move |_| {
+            
+            // Incements the u32 count of the components execution state.
+            set_state_with_topo_id::<u32>(button_count + 1, current_id);
+
+            // Look Ma No Messages (I have a bad feeling about this...)
+            Msg::DoNothing
+        }),
+        format!("Hook State Button × {}", button_count)
+    ]]
+}
+```
+
+
+**Caveats:**
+
+- Dont judge me I was bored this afteroon, this is almost certainly broken and a bad idea
+
+- this 100% uses topo code from Moxie (https://github.com/anp/moxie), cut and pasted into this example because the latest version was not published as a separate crate. 
+
+-  The core technology (topo) is 100% the idea and created by the Moxie team, I have nothing to do with them and just wanted to get topo working with seed.
+
+**How does it work?**
+
+- topo creates a new execution context for every `[topo::nested]` annoted function, and every `topo::call!` block. Further calls to `topo::root!` re-roots the execution context. The re-rooting allows for consistent execution contexts for the same components as long as you re-root at the start of the base view function. This means that one can store and retrieve local data for an individual component which has been annoted by `topo::nested`.
+
+- currently only 1 type per context is storable, however if you want to store more than 1 String say, you can create a `HashMap<key,String>` and store that.
+
+- a type gets stored with : `set_state::<String>(text)` which stores `text` in the component for `String`.
+
+- there are several ways of getting a reference to a stored value. If you are okay with a clone the easiest way is `clone_state::<String>()`. However if you need a reference you need to access the global static `STORE.lock().unwrap().get::<String>()` and deal with the borrow checker issues.
+
+- if you want to set the state from an event callback (quite common) you should use  `set_state_with_topo_id::<String>(text, current_id)` where current_id is obtained in the component itself. The reason for this is that the event callback will not run in the same context as the component. You can do this with `let current_id = topo::Id::current()`.
+
+**Why would anyone want to do this?**
+
+- I wanted to see what all the fuss is about with React Hooks so thought i'd implement in Seed.
+
+- Just sometimes I get put off adjusting my app because of the Msg:: chain chase all over the place to keep track of one simple thing.
+
+- Per compoment data means for simple compoents I dont need to pollute the app with non-business logic.
+
+**Standard quickstart stuff**
 
 `rustup update`
 
