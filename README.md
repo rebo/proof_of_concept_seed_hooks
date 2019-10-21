@@ -18,7 +18,7 @@ fn example() -> Node<Msg> {
                 set_count(count + 1);
                 Msg::DoNothing
             }),
-            format!("Click Me × {}", count)
+            Click Me
         ]
     ]
 }
