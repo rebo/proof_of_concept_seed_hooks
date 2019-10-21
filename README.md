@@ -77,7 +77,7 @@ fn hook_style_button() -> Node<Msg> {
 
 - I have no idea how 'stable' this pattern is particularly when you might have views iterating all over the place, particulary if you can't be certain of the order they are called in.
 
-- If you want to use react style you can call `store::use_state::<u32>(0)` which returns a  `(count, set_count)`. `count` is the data being returned and `set_count` is an Arc boxed closure that can be called to update the state.
+- If you want to use react style you can call `store::use_state::<u32>(0)` which returns a  `(count, set_count)`. `count` is the data being returned and `set_count` is an Arc boxed closure that can be called to update the state. The advantage of this is that the currentId is generated and passed automatically.
 
 **Why would anyone want to do this?**
 
