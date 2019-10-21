@@ -12,7 +12,7 @@ fn example() -> Node<Msg> {
     let (count, set_count) = store::use_state::<u32>(0);
 
     div![
-        p!["You clicked", count, "times"],
+        p![format!("You clicked {} times", count)],
         button![
             input_ev("click", move |_| {
                 set_count(count + 1);
