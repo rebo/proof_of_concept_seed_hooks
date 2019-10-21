@@ -31,6 +31,23 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 }
 
 #[topo::nested]
+fn example() -> Node<Msg> {
+    // Declare a new state variable which we'll call "count"
+    let (count, set_count) = store::use_state::<u32>(0);
+
+    div![
+        p![format!("You clicked {} times", count)],
+        button![
+            input_ev("click", move |_| {
+                set_count(count + 1);
+                Msg::DoNothing
+            }),
+            format!("Click Me × {}", count)
+        ]
+    ]
+}
+
+#[topo::nested]
 fn hook_style_button() -> Node<Msg> {
     let current_id = topo::Id::current();
     let button_count = clone_state::<u32>().unwrap_or(0);
@@ -68,6 +85,7 @@ fn hook_style_input() -> Node<Msg> {
 fn view(model: &Model) -> impl View<Msg> {
     topo::root!({
         div![
+            example!(),
             hook_style_button!(),
             hook_style_button!(),
             hook_style_button!(),

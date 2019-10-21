@@ -1,9 +1,9 @@
-use once_cell::sync::Lazy;
-use std::sync::Mutex;
-
 use anymap::any::Any;
+use once_cell::sync::Lazy;
 use slotmap::{DefaultKey, Key, SecondaryMap, SlotMap};
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::Mutex;
 use topo::*;
 
 #[derive(Default)]
@@ -19,11 +19,28 @@ pub fn clone_state<T: Send + Sync + 'static + Clone>() -> Option<T> {
     STORE.lock().unwrap().get_state::<T>().cloned()
 }
 
-pub fn set_state_with_topo_id<T: Send + Sync + 'static>(data: T, current_id: topo::Id) {
+pub fn set_state_with_topo_id<T: Send + Sync + 'static + Clone>(data: T, current_id: topo::Id) {
     STORE
         .lock()
         .unwrap()
         .set_state_with_topo_id::<T>(data, current_id);
+}
+
+pub fn use_state<T: Send + Sync + 'static + Clone>(data: T) -> (T, Arc<dyn Fn(T)>) {
+    let current_id = topo::Id::current();
+
+    if let Some(stored_data) = clone_state::<T>() {
+        (
+            stored_data,
+            Arc::new(move |data| set_state_with_topo_id::<T>(data, current_id)),
+        )
+    } else {
+        set_state_with_topo_id::<T>(data.clone(), current_id);
+        (
+            data,
+            Arc::new(move |new_data| set_state_with_topo_id::<T>(new_data, current_id)),
+        )
+    }
 }
 
 impl Store {

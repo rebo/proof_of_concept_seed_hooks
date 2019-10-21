@@ -5,6 +5,30 @@
 
 This is a complete counting button with state, no messages required: 
 
+
+See the first State Hook Example for a comparision: https://reactjs.org/docs/hooks-overview.html
+```rust
+#[topo::nested]
+fn example() -> Node<Msg> {
+    // Declare a new state variable which we'll call "count"
+    let (count, set_count) = store::use_state::<u32>(0);
+
+    div![
+        p![format!("You clicked {} times", count)],
+        button![
+            input_ev("click", move |_| {
+                set_count(count + 1);
+                Msg::DoNothing
+            }),
+            format!("Click Me × {}", count)
+        ]
+    ]
+}
+```
+
+
+Slightly less magic version : 
+
 ```rust
 #[topo::nested]
 fn hook_style_button() -> Node<Msg> {
@@ -53,6 +77,8 @@ fn hook_style_button() -> Node<Msg> {
 - if you want to set the state from an event callback (quite common) you should use  `set_state_with_topo_id::<String>(text, current_id)` where current_id is obtained in the component itself. The reason for this is that the event callback will not run in the same context as the component. You can do this with `let current_id = topo::Id::current()`.
 
 - I have no idea how 'stable' this pattern is particularly when you might have views iterating all over the place, particulary if you can't be certain of the order they are called in.
+
+- If you want to use react style you can call `store::use_state::<u32>(0)` which returns a  `(count, set_count)`. `count` is the data being returned and `set_count` is an Arc boxed closure that can be called to update the state.
 
 **Why would anyone want to do this?**
 
