@@ -33,7 +33,7 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 #[topo::nested]
 fn example() -> Node<Msg> {
     // Declare a new state variable which we'll call "count"
-    let (count, set_count) = store::use_state::<u32>(0);
+    let (count, set_count) = store::use_state(0);
 
     div![
         p![format!("You clicked {} times", count)],
