@@ -9,7 +9,7 @@ This is a complete counting button with state, no messages required:
 #[topo::nested]
 fn example() -> Node<Msg> {
     // Declare a new state variable which we'll call "count"
-    let (count, set_count) = store::use_state(0);
+    let (count, set_count) = use_state(0);
 
     div![
         p![format!("You clicked {} times", count)],
