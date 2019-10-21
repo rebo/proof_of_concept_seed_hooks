@@ -5,8 +5,6 @@
 
 This is a complete counting button with state, no messages required: 
 
-
-See the first State Hook Example for a comparision: https://reactjs.org/docs/hooks-overview.html
 ```rust
 #[topo::nested]
 fn example() -> Node<Msg> {
@@ -26,8 +24,9 @@ fn example() -> Node<Msg> {
 }
 ```
 
+See the first State Hook Example for a comparision: https://reactjs.org/docs/hooks-overview.html
 
-Slightly less magic version : 
+Below is a slightly less magic version : 
 
 ```rust
 #[topo::nested]
