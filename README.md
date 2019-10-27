@@ -60,7 +60,7 @@ fn hook_style_button() -> Node<Msg> {
         input_ev("click", move |_| {
             
             // Increments the u32 count of the components execution state.
-            set_state_with_topo_id::<u32>(button_count + 1, current_id);
+            get_set_state_with_topo_id::<u32>(button_count + 1, current_id);
 
             // Look Ma No Messages (I have a bad feeling about this...)
             Msg::DoNothing
@@ -85,13 +85,13 @@ fn hook_style_button() -> Node<Msg> {
 
 - See this awesome talk explaining how topo works: https://www.youtube.com/watch?v=tmM756XZt20
 
-- a type gets stored with : `set_state::<String>(text)` which stores `text` in the component for the `String` type.
+- a type gets stored with : `get_set_state::<String>(text)` which stores `text` in the component for the `String` type.
 
 - there are several ways of getting a reference to a stored value. If you are okay with a clone the easiest way is `clone_state::<String>()`. However if you need a reference you need to access the global static `STORE.lock().unwrap().get::<String>()` and deal with the borrow checker issues.
 
 - currently only 1 type per context is storable, however if you want to store more than 1 String say, you can create a `HashMap<key,String>` or `Vec` and store that.
 
-- if you want to set the state from an event callback (quite common) you should use  `set_state_with_topo_id::<String>(text, current_id)` where current_id is obtained in the component itself. The reason for this is that the event callback will not run in the same context as the component. You can do this with `let current_id = topo::Id::current()`.
+- if you want to set the state from an event callback (quite common) you should use  `get_set_state_with_topo_id::<String>(text, current_id)` where current_id is obtained in the component itself. The reason for this is that the event callback will not run in the same context as the component. You can do this with `let current_id = topo::Id::current()`.
 
 - I have no idea how 'stable' this pattern is particularly when you might have views iterating all over the place, particulary if you can't be certain of the order they are called in.
 
