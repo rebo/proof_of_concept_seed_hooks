@@ -48,7 +48,6 @@ It's possible to write 'custom hooks' for instance form validation that allows t
 
 ```rust
 #[topo::nested]
-#[topo::nested]
 pub fn simple_form_test() -> Node<Msg> {
     
     // form custom hook
