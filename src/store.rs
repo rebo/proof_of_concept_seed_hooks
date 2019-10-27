@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use topo::*;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Store {
     pub id_to_key_map: HashMap<topo::Id, DefaultKey>,
     pub primary_slotmap: SlotMap<DefaultKey, Id>,
@@ -26,9 +26,17 @@ pub fn set_state_with_topo_id<T: Send + Sync + 'static + Clone>(data: T, current
         .set_state_with_topo_id::<T>(data, current_id);
 }
 
+pub fn get_state_with_topo_id<T: Send + Sync + 'static + Clone>(current_id: topo::Id) -> Option<T> {
+    STORE
+        .lock()
+        .unwrap()
+        .get_state_with_topo_id::<T>(current_id)
+        .cloned()
+}
+
 pub fn use_state<T: Send + Sync + 'static + Clone>(data: T) -> (T, Arc<dyn Fn(T)>) {
     let current_id = topo::Id::current();
-
+    // log!(current_id);
     if let Some(stored_data) = clone_state::<T>() {
         (
             stored_data,
@@ -42,6 +50,16 @@ pub fn use_state<T: Send + Sync + 'static + Clone>(data: T) -> (T, Arc<dyn Fn(T)
         )
     }
 }
+
+pub fn state_getter<T: Send + Sync + 'static + Clone>() -> Arc<dyn Fn() -> Option<T>> {
+    let current_id = topo::Id::current();
+    Arc::new(move || get_state_with_topo_id::<T>(current_id))
+}
+
+// }
+// pub fn get_state<T: Send + Sync + 'static + Clone>() -> Option<T> {
+//     STORE.lock().unwrap().get_state::<T>().cloned();
+// }
 
 impl Store {
     // Constructor
@@ -70,6 +88,25 @@ impl Store {
     pub fn set_state<T: Send + Sync + 'static>(&mut self, data: T) {
         let current_id = topo::Id::current();
         self.set_state_with_topo_id::<T>(data, current_id);
+    }
+
+    pub fn get_state_with_topo_id<T: Send + Sync + 'static>(
+        &mut self,
+        current_id: topo::Id,
+    ) -> Option<&T> {
+        let key = self
+            .id_to_key_map
+            .get(&current_id)
+            .copied()
+            .unwrap_or_default();
+
+        if key.is_null() {
+            None
+        } else if let Some(existing_secondary_map) = self.get_mut_secondarymap::<T>() {
+            existing_secondary_map.get(key)
+        } else {
+            None
+        }
     }
 
     pub fn set_state_with_topo_id<T: Send + Sync + 'static>(
