@@ -44,28 +44,34 @@ function Example() {
 ```
 See the first State Hook Example for a comparision: https://reactjs.org/docs/hooks-overview.html
 
-Below is a slightly less magic version : 
+It's possible to write 'custom hooks' for instance form validation that allows the below to all happen in a view function (Note that this is just a toy example and not fully usable):
 
 ```rust
 #[topo::nested]
-fn hook_style_button() -> Node<Msg> {
-    // Needed to pass local execution topology to event callback
-    let current_id = topo::Id::current();
-
-    // On first execution sets the current button count to zero
-    // on subsequent executions retrieves the stored button count
-    let button_count = clone_state::<u32>().unwrap_or(0);
+#[topo::nested]
+pub fn simple_form_test() -> Node<Msg> {
     
-    button![
-        input_ev("click", move |_| {
-            
-            // Increments the u32 count of the components execution state.
-            get_set_state_with_topo_id::<u32>(button_count + 1, current_id);
-
-            // Look Ma No Messages (I have a bad feeling about this...)
-            Msg::DoNothing
-        }),
-        format!("Hook State Button × {}", button_count)
+    // form custom hook
+    // form ctl allows for rendering of various input types and 
+    // handles all callbacks and local state
+    let (_form_state, ctl) = form_state::use_form_state::<Msg>();
+    div![
+        div![
+            label!["description"],
+            // a 'required' text input field
+            input![ctl.text("description").required().render()],
+            ctl.input_errors_for("description"),
+        ],
+        div![
+            label!["password"],
+            // a password field that is both required and also must include various characters
+            input![ctl
+                .password("password")
+                .required()
+                .letters_num_and_special_required()
+                .render()],
+            ctl.input_errors_for("password"),
+        ],
     ]
 }
 ```

@@ -57,6 +57,9 @@ pub fn very_simple_form_test() -> Node<Msg> {
 
 #[topo::nested]
 pub fn simple_form_test() -> Node<Msg> {
+    // form custom hook
+    // form ctl allows for rendering of various input types and
+    // handles all callbacks and local state
     let (_form_state, ctl) = form_state::use_form_state::<Msg>();
     div![
         div![
