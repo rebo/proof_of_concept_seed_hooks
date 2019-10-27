@@ -13,8 +13,7 @@ use form_state::UpdateElLocal;
 #[topo::nested]
 fn hook_style_button() -> Node<Msg> {
     // Declare a new state variable which we'll call "count"
-    let (get_count, set_count) = use_state(0);
-    let count = get_count();
+    let (count, set_count) = use_state(0);
     div![
         p![format!("You clicked {} times", count)],
         button![
@@ -29,8 +28,7 @@ fn hook_style_button() -> Node<Msg> {
 
 #[topo::nested]
 fn hook_style_input() -> Node<Msg> {
-    let (get_string, set_string) = use_state("".to_string());
-    let mut input_string = get_string();
+    let (mut input_string, set_string) = use_state("".to_string());
 
     if input_string == "Seed" {
         input_string = "is pretty cool!".to_string();
@@ -48,10 +46,51 @@ fn hook_style_input() -> Node<Msg> {
 }
 
 #[topo::nested]
-pub fn complex_form_test() -> Node<Msg> {
-    let (form_state, ctl) = form_state::use_form_state_builder::<Msg>().build();
+pub fn very_simple_form_test() -> Node<Msg> {
+    let (form_state, ctl) = form_state::use_form_state::<Msg>();
+    div![
+        div![input![ctl.text("username").render()],],
+        div![input![ctl.password("pword").render()],],
+        div![span![format!("{:#?}", form_state)]],
+    ]
+}
+
+#[topo::nested]
+pub fn simple_form_test() -> Node<Msg> {
+    let (_form_state, ctl) = form_state::use_form_state::<Msg>();
     div![
         div![
+            label!["description"],
+            input![ctl.text("description").required().render()],
+            ctl.input_errors_for("description"),
+        ],
+        div![
+            label!["password"],
+            input![ctl
+                .password("password")
+                .required()
+                .letters_num_and_special_required()
+                .render()],
+            ctl.input_errors_for("password"),
+        ],
+        div![
+            label!["email"],
+            input![ctl
+                .text("email")
+                .required()
+                .validate_on_blur_only()
+                .render()],
+            ctl.input_errors_for("email"),
+        ],
+    ]
+}
+
+#[topo::nested]
+pub fn complex_form_test() -> Node<Msg> {
+    let (_form_state, ctl) = form_state::use_form_state_builder::<Msg>().build();
+    div![
+        div![
+            label!["description"],
             input![ctl
                 .text("description")
                 .validate_with(|value| {
@@ -62,15 +101,16 @@ pub fn complex_form_test() -> Node<Msg> {
                         Ok(())
                     }
                 })
-                // .validate_on_blur()
                 .render()],
             ctl.input_errors_for("description"),
         ],
         div![
+            label!["name"],
             input![ctl.text("name").render()],
             ctl.input_errors_for("name"),
         ],
         div![
+            label!["email"],
             input![ctl
                 .text("email")
                 .on_blur(|value| {
@@ -85,13 +125,14 @@ pub fn complex_form_test() -> Node<Msg> {
 
 pub fn view() -> Node<Msg> {
     div![
+        span!["Very Simple Form"],
+        very_simple_form_test!(),
+        span!["Simple Form"],
+        simple_form_test!(),
+        span!["Complex Form"],
         complex_form_test!(),
-        // hook_style_button!(),
-        // hook_style_button!(),
-        // hook_style_button!(),
-        // hook_style_button!(),
-        // hook_style_input!(),
-        // hook_style_input!(),
-        // hook_style_input!(),
+        hook_style_button!(),
+        hook_style_button!(),
+        hook_style_input!(),
     ]
 }

@@ -1,10 +1,11 @@
 use crate::store::*;
+use fancy_regex::Regex;
 use seed::prelude::*;
 use std::sync::Arc;
 
+//A local copy of seed's UpdateEl Trait, this allows the form helper return a tuple of (Attrs,Vec<Listeners)
 use seed::dom_types::UpdateEl;
 pub trait UpdateElLocal<T> {
-    // T is the type of thing we're updating; eg attrs, style, events etc.
     fn update(self, el: &mut T);
 }
 
@@ -22,12 +23,13 @@ impl<Ms> UpdateElLocal<El<Ms>> for (seed::dom_types::Attrs, seed::events::Listen
     }
 }
 
+// Struct for storing form values
 #[derive(Debug, Default, Clone)]
 pub struct FormState {
     pub values: Vec<InputState>,
 }
 
-// #[derive(Default, Clone)]
+// Each Input element has a name, value, can be touched, is or isnt valid and has a list of errors
 #[derive(Clone, Debug)]
 pub struct InputState {
     pub name: String,
@@ -60,47 +62,78 @@ impl FormState {
     //     }
     // }
 
-    pub fn clone_value<T: Into<String>>(&self, name: T) -> String {
-        let name = name.into();
+    // pub fn clone_value<T: Into<String>>(&self, name: T) -> String {
+    //     let name = name.into();
 
-        self.values
-            .iter()
-            .find(|inp| inp.name == name)
-            .map(|inp| inp.value.clone())
-            .unwrap_or_default()
-    }
+    //     self.values
+    //         .iter()
+    //         .find(|inp| inp.name == name)
+    //         .map(|inp| inp.value.clone())
+    //         .unwrap_or_default()
+    // }
 }
 
+// The controller struct that provides methods to output (Attrs,Vec<Listener) and also vec of errors
+// PhantomData needed as Ms is the Msg type that is application specific and used in method types
 use std::marker::PhantomData;
 pub struct FormControl<Ms> {
     _phantom: PhantomData<Ms>,
-    id: topo::Id,
+    // id: topo::Id,
 }
 
-pub struct TextInputBuilder<Ms> {
+type ValidationClosure = Arc<dyn Fn(String) -> Result<(), String>>;
+
+pub struct InputBuilder<Ms> {
     name: String,
+    input_type: InputType,
     _phantom: PhantomData<Ms>,
     on_blur_closure: Option<Arc<dyn Fn(String) -> ()>>,
-    validate_closure: Option<Arc<dyn Fn(String) -> Result<(), String>>>,
-    validate_on_blur: bool,
+    validate_closures: Vec<ValidationClosure>,
+    validate_on_blur_only: bool,
 }
 
-impl<Ms> TextInputBuilder<Ms>
+impl<Ms> InputBuilder<Ms>
 where
     Ms: Default,
 {
-    fn new<T: Into<String>>(name: T) -> TextInputBuilder<Ms> {
-        TextInputBuilder {
+    fn new<T: Into<String>>(name: T, input_type: InputType) -> InputBuilder<Ms> {
+        InputBuilder {
             _phantom: PhantomData,
             name: name.into(),
             on_blur_closure: None,
-            validate_closure: None,
-            validate_on_blur: false,
+            validate_closures: vec![],
+            validate_on_blur_only: false,
+            input_type,
         }
     }
 
-    pub fn validate_on_blur(mut self) -> Self {
-        self.validate_on_blur = true;
+    pub fn letters_num_and_special_required(mut self) -> Self {
+        self.validate_closures.push(Arc::new(|value| {
+            let re = Regex::new(r"^(?=.*?[0-9])(?=.*?[A-Za-z])(?=.*[^0-9A-Za-z]).+$").unwrap();
+            if !re.is_match(&value).unwrap() {
+                Err(
+                    "This field needs at least one letter, one number and one special character!"
+                        .to_string(),
+                )
+            } else {
+                Ok(())
+            }
+        }));
+        self
+    }
+    pub fn required(mut self) -> Self {
+        self.validate_closures.push(Arc::new(|value| {
+            if value.is_empty() {
+                Err("This field cannot be empty!".to_string())
+            } else {
+                Ok(())
+            }
+        }));
+        self
+    }
+
+    pub fn validate_on_blur_only(mut self) -> Self {
+        self.validate_on_blur_only = true;
         self
     }
 
@@ -110,60 +143,115 @@ where
     }
 
     pub fn validate_with<F: Fn(String) -> Result<(), String> + 'static>(mut self, func: F) -> Self {
-        self.validate_closure = Some(Arc::new(func));
+        self.validate_closures.push(Arc::new(func));
         self
     }
 
     pub fn render(&self) -> (seed::dom_types::Attrs, Vec<seed::events::Listener<Ms>>) {
         (
-            self.text_attrs(self.name.clone()),
+            match &self.input_type {
+                InputType::Text => self.text_attrs(self.name.clone()),
+                InputType::Password => self.password_attrs(self.name.clone()),
+            },
             self.events(self.name.clone()),
         )
     }
+
+    fn password_attrs<T: Into<String>>(&self, name: T) -> seed::dom_types::Attrs {
+        let name = name.into();
+        // state and access to the form_state, form_state needs to be mutated with new InputState if one does not already exist
+        let (mut form_state, set_state) = use_state(FormState::default());
+
+        let text_input_value =
+            if let Some(input) = form_state.values.iter().find(|input| input.name == name) {
+                input.value.clone()
+            } else {
+                form_state.values.push(InputState::new(name));
+                set_state(form_state.clone());
+                "".to_string()
+            };
+        attrs! {At::Type => "password", At::Value => text_input_value}
+    }
+
     fn text_attrs<T: Into<String>>(&self, name: T) -> seed::dom_types::Attrs {
         let name = name.into();
-        let (get_form_state, get_set_state) = use_state(FormState::default());
+        // state and access to the form_state, form_state needs to be mutated with new InputState if one does not already exist
+        let (mut form_state, set_state) = use_state(FormState::default());
 
-        let text_input_value = if let Some(input) = get_form_state()
-            .values
-            .iter()
-            .find(|input| input.name == name)
-        {
-            input.value.clone()
-        } else {
-            get_form_state().values.push(InputState::new(name));
-            get_set_state(get_form_state().clone());
-            "".to_string()
-        };
+        let text_input_value =
+            if let Some(input) = form_state.values.iter().find(|input| input.name == name) {
+                input.value.clone()
+            } else {
+                form_state.values.push(InputState::new(name));
+                set_state(form_state.clone());
+                "".to_string()
+            };
         attrs! {At::Type => "text", At::Value => text_input_value}
     }
 
     fn events<T: Into<String>>(&self, name: T) -> Vec<seed::events::Listener<Ms>> {
         let name = name.into();
-        let field_name = name.clone();
-        let (get_form_state, get_set_state) = use_state(FormState::default());
         let mut listeners = vec![];
-        listeners.push(input_ev("input", move |text| {
-            log!("here2");
-            let mut form_state = get_form_state();
 
-            log!("hereafter");
-            if let Some(input) = form_state
-                .values
-                .iter_mut()
-                .find(|input| input.name == field_name)
-            {
-                if input.value != text {
+        let (_form_state, set_state) = use_state(FormState::default());
+        let form_state_getter = state_getter::<FormState>();
+        let field_name = name.clone();
+        listeners.push(input_ev("blur", move |_text| {
+            if let Some(mut form_state) = form_state_getter() {
+                if let Some(input) = form_state
+                    .values
+                    .iter_mut()
+                    .find(|input| input.name == field_name)
+                {
                     input.errors = vec![];
-                    input.touched = true;
-                    input.value = text;
                 }
+                set_state(form_state);
             }
-            get_set_state(form_state);
             Ms::default()
         }));
 
+        let (_form_state, set_state) = use_state(FormState::default());
+        let form_state_getter = state_getter::<FormState>();
         let field_name = name.clone();
+        listeners.push(input_ev("input", move |_text| {
+            if let Some(mut form_state) = form_state_getter() {
+                if let Some(input) = form_state
+                    .values
+                    .iter_mut()
+                    .find(|input| input.name == field_name)
+                {
+                    input.errors = vec![];
+                }
+                set_state(form_state);
+            }
+            Ms::default()
+        }));
+
+        // pushes an input event listener which only does something if form_state exists.
+        // If it does exit the callback will each for an inputs state with matching name
+        // and then update it if the text value has changed.
+        let field_name = name.clone();
+        let (_form_state, set_state) = use_state(FormState::default());
+        let form_state_getter = state_getter::<FormState>();
+        listeners.push(input_ev("input", move |text| {
+            if let Some(mut form_state) = form_state_getter() {
+                if let Some(input) = form_state
+                    .values
+                    .iter_mut()
+                    .find(|input| input.name == field_name)
+                {
+                    if input.value != text {
+                        input.errors = vec![];
+                        input.touched = true;
+                        input.value = text;
+                    }
+                }
+                set_state(form_state);
+            }
+            Ms::default()
+        }));
+
+        // if there is an onblur closure then add an event listener to call it
         let closure = self.on_blur_closure.clone();
         if closure.is_some() {
             listeners.push(input_ev("blur", move |text| {
@@ -174,22 +262,46 @@ where
             }))
         }
 
-        let blur_or_input = if self.validate_on_blur {
-            "blur"
-        } else {
-            "input"
-        };
-
-        let (get_form_state, get_set_state) = use_state(FormState::default());
-        let closure = self.validate_closure.clone();
-        if closure.is_some() {
-            listeners.push(input_ev(blur_or_input, move |text| {
-                log!("here");
-                let mut form_state = get_form_state();
-                log!(form_state);
-                log!("hereafter");
-                if let Some(callback) = closure {
-                    if let Err(error) = callback(text) {
+        // determine whether a validation callback is on blur or on input
+        if !self.validate_on_blur_only {
+            // if a validate closure exist add it to the input event callback chain.
+            for closure in self.validate_closures.iter().cloned() {
+                // set state accessor, note we cannot use _form_state in a closure as it's
+                // state will be as per when this function is called, not at time of callback
+                // we need a form_state_getter which is a function not a struct that gets called on callback
+                let (_form_state, set_state) = use_state(FormState::default());
+                let form_state_getter = state_getter::<FormState>();
+                let field_name = name.clone();
+                listeners.push(input_ev("input", move |text| {
+                    if let Some(mut form_state) = form_state_getter() {
+                        // if the callback generates an error add it to the errors vec field
+                        if let Err(error) = closure(text) {
+                            if let Some(input) = form_state
+                                .values
+                                .iter_mut()
+                                .find(|input| input.name == field_name)
+                            {
+                                input.errors.push(error);
+                            }
+                            set_state(form_state);
+                        };
+                    }
+                    Ms::default()
+                }))
+            }
+        }
+        // if a validate closure exist add it to the input event callback chain.
+        for closure in self.validate_closures.iter().cloned() {
+            // set state accessor, note we cannot use _form_state in a closure as it's
+            // state will be as per when this function is called, not at time of callback
+            // we need a form_state_getter which is a function not a struct that gets called on callback
+            let (_form_state, set_state) = use_state(FormState::default());
+            let form_state_getter = state_getter::<FormState>();
+            let field_name = name.clone();
+            listeners.push(input_ev("blur", move |text| {
+                if let Some(mut form_state) = form_state_getter() {
+                    // if the callback generates an error add it to the errors vec field
+                    if let Err(error) = closure(text) {
                         if let Some(input) = form_state
                             .values
                             .iter_mut()
@@ -197,9 +309,9 @@ where
                         {
                             input.errors.push(error);
                         }
-                        get_set_state(form_state);
+                        set_state(form_state);
                     };
-                };
+                }
                 Ms::default()
             }))
         }
@@ -213,20 +325,29 @@ where
 {
     pub fn input_errors_for<T: Into<String>>(&self, name: T) -> Vec<Node<Ms>> {
         let name = name.into();
-        let (get_form_state, _get_set_state) = use_state(FormState::default());
-        if let Some(input) = get_form_state().values.iter().find(|inp| inp.name == name) {
+        let (form_state, _set_state) = use_state(FormState::default());
+        if let Some(input) = form_state.values.iter().find(|inp| inp.name == name) {
             input.errors.iter().map(|err| span![err]).collect::<_>()
         } else {
             vec![]
         }
     }
 
-    pub fn text<T: Into<String>>(&self, name: T) -> TextInputBuilder<Ms> {
-        TextInputBuilder::new(name)
+    pub fn text<T: Into<String>>(&self, name: T) -> InputBuilder<Ms> {
+        InputBuilder::new(name, InputType::Text)
+    }
+
+    pub fn password<T: Into<String>>(&self, name: T) -> InputBuilder<Ms> {
+        InputBuilder::new(name, InputType::Password)
     }
 }
 
-pub fn use_form_state<Ms: Default>() -> (Arc<dyn Fn() -> FormState>, FormControl<Ms>) {
+enum InputType {
+    Password,
+    Text,
+}
+
+pub fn use_form_state<Ms: Default>() -> (FormState, FormControl<Ms>) {
     use_form_state_builder::<Ms>().build()
 }
 
@@ -234,20 +355,20 @@ pub fn use_form_state<Ms: Default>() -> (Arc<dyn Fn() -> FormState>, FormControl
 pub struct StateFormBuilder<Ms> {
     _phantom: PhantomData<Ms>,
     on_touched_closure: Option<Arc<dyn Fn(FormState) -> ()>>,
-    validate_on_blur: bool,
+    validate_on_blur_only: bool,
 }
 
 impl<Ms> StateFormBuilder<Ms>
 where
     Ms: Default,
 {
-    pub fn build(&self) -> (Arc<dyn Fn() -> FormState>, FormControl<Ms>) {
-        let (get_form_state, _get_set_state) = use_state(FormState::default());
+    pub fn build(&self) -> (FormState, FormControl<Ms>) {
+        let (form_state, _set_state) = use_state(FormState::default());
         (
-            get_form_state,
+            form_state,
             FormControl {
                 _phantom: PhantomData,
-                id: topo::Id::current(),
+                // id: topo::Id::current(),
             },
         )
     }

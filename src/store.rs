@@ -26,40 +26,40 @@ pub fn set_state_with_topo_id<T: Send + Sync + 'static + Clone>(data: T, current
         .set_state_with_topo_id::<T>(data, current_id);
 }
 
-pub fn get_state_with_topo_id<T: Send + Sync + 'static + Clone>(
-    data: T,
-    current_id: topo::Id,
-) -> T {
+pub fn get_state_with_topo_id<T: Send + Sync + 'static + Clone>(current_id: topo::Id) -> Option<T> {
     STORE
         .lock()
         .unwrap()
         .get_state_with_topo_id::<T>(current_id)
         .cloned()
-        .unwrap_or(data)
 }
 
-pub fn use_state<T: Send + Sync + 'static + Clone>(
-    data: T,
-) -> (Arc<dyn Fn() -> T>, Arc<dyn Fn(T)>) {
+pub fn use_state<T: Send + Sync + 'static + Clone>(data: T) -> (T, Arc<dyn Fn(T)>) {
     let current_id = topo::Id::current();
-    if STORE
-        .lock()
-        .unwrap()
-        .get_state_with_topo_id::<T>(current_id)
-        .is_none()
-    {
+    // log!(current_id);
+    if let Some(stored_data) = clone_state::<T>() {
+        (
+            stored_data,
+            Arc::new(move |data| set_state_with_topo_id::<T>(data, current_id)),
+        )
+    } else {
         set_state_with_topo_id::<T>(data.clone(), current_id);
+        (
+            data,
+            Arc::new(move |new_data| set_state_with_topo_id::<T>(new_data, current_id)),
+        )
     }
-
-    (
-        Arc::new(move || get_state_with_topo_id::<T>(data.clone(), current_id)),
-        Arc::new(move |new_data| set_state_with_topo_id::<T>(new_data, current_id)),
-    )
 }
 
-pub fn get_state<T: Send + Sync + 'static + Clone>() -> Option<T> {
-    STORE.lock().unwrap().get_state::<T>().cloned()
+pub fn state_getter<T: Send + Sync + 'static + Clone>() -> Arc<dyn Fn() -> Option<T>> {
+    let current_id = topo::Id::current();
+    Arc::new(move || get_state_with_topo_id::<T>(current_id))
 }
+
+// }
+// pub fn get_state<T: Send + Sync + 'static + Clone>() -> Option<T> {
+//     STORE.lock().unwrap().get_state::<T>().cloned();
+// }
 
 impl Store {
     // Constructor
