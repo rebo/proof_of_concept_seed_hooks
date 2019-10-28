@@ -1,9 +1,56 @@
+// This is a partially complete form state custom hook
+// only password and text inputs implemented
+// this can be easily extendable to other other form element types
+
 use crate::store::*;
 use fancy_regex::Regex;
 use seed::prelude::*;
 use std::sync::Arc;
 
-//A local copy of seed's UpdateEl Trait, this allows the form helper return a tuple of (Attrs,Vec<Listeners)
+// Generates a default formbuilder and builds it.
+pub fn use_form_state<Ms: Default>() -> (FormState, FormControl<Ms>) {
+    use_form_state_builder::<Ms>().build()
+}
+
+// Builder object for form state. Only needed if custom options are needed for the form builder
+// such as a form-wide on blur closure
+pub fn use_form_state_builder<Ms>() -> StateFormBuilder<Ms>
+where
+    Ms: Default,
+{
+    StateFormBuilder::default()
+}
+
+// Form Builder, right now only really accepts a form wide on blur closure as an option.
+#[derive(Default)]
+pub struct StateFormBuilder<Ms> {
+    _phantom: PhantomData<Ms>,
+    on_blur_closure: Option<Arc<dyn Fn(FormState) -> ()>>,
+    validate_on: InputBlurBothEnum,
+}
+
+impl<Ms> StateFormBuilder<Ms>
+where
+    Ms: Default,
+{
+    pub fn build(&self) -> (FormState, FormControl<Ms>) {
+        let (form_state, _set_state) = use_state(FormState::default());
+        (
+            form_state,
+            FormControl {
+                _phantom: PhantomData,
+                on_blur_closure: self.on_blur_closure.clone(),
+            },
+        )
+    }
+    pub fn on_blur<F: Fn(FormState) -> () + 'static>(mut self, func: F) -> Self {
+        self.on_blur_closure = Some(Arc::new(func));
+        self
+    }
+}
+
+// A local copy of seed's UpdateEl Trait, this allows the form helper return a tuple of (Attrs,Vec<Listeners)
+// Which means that ctrl::text().render() for instance can be used directly in a seed macro
 use seed::dom_types::UpdateEl;
 pub trait UpdateElLocal<T> {
     fn update(self, el: &mut T);
@@ -29,7 +76,12 @@ pub struct FormState {
     pub values: Vec<InputState>,
 }
 
+// Right now FormState is "dumb" because a FormControl is used to modify it
+// via the component 'hook' storage
+impl FormState {}
+
 // Each Input element has a name, value, can be touched, is or isnt valid and has a list of errors
+// at the moment valid is not used
 #[derive(Clone, Debug)]
 pub struct InputState {
     pub name: String,
@@ -39,6 +91,7 @@ pub struct InputState {
     pub errors: Vec<String>,
 }
 
+// Needs to be initialised with a 'name'.
 impl InputState {
     fn new<T: Into<String>>(name: T) -> InputState {
         let name = name.into();
@@ -52,47 +105,55 @@ impl InputState {
     }
 }
 
-impl FormState {
-    // fn clear(&mut self) {
-    //     for input in self.values.iter_mut() {
-    //         input.value = "".to_string();
-    //         input.touched = false;
-    //         input.valid = false;
-    //         input.errors = vec![];
-    //     }
-    // }
-
-    // pub fn clone_value<T: Into<String>>(&self, name: T) -> String {
-    //     let name = name.into();
-
-    //     self.values
-    //         .iter()
-    //         .find(|inp| inp.name == name)
-    //         .map(|inp| inp.value.clone())
-    //         .unwrap_or_default()
-    // }
-}
-
-// The controller struct that provides methods to output (Attrs,Vec<Listener) and also vec of errors
-// PhantomData needed as Ms is the Msg type that is application specific and used in method types
+// FormControl provides methods to output a rendered (Attrs,Vec<Listener) to seed,
+// also print errors for a form element if needed.
+// PhantomData needed as Ms is the Msg type that is application specific and used in specific seed object types
+// the on_blur closure accepts a closure to be run whenever any element loses focus
+// this runs after any specific element validation etc.
 use std::marker::PhantomData;
 pub struct FormControl<Ms> {
     _phantom: PhantomData<Ms>,
     on_blur_closure: Option<Arc<dyn Fn(FormState) -> ()>>,
-    // id: topo::Id,
+}
+
+impl<Ms> FormControl<Ms>
+where
+    Ms: Default,
+{
+    // Constructor for a text InputBuilder
+    pub fn text<T: Into<String>>(&self, name: T) -> InputBuilder<Ms> {
+        InputBuilder::new(name, InputType::Text, self.on_blur_closure.clone())
+    }
+    // Constructor for a password InputBuilder
+    pub fn password<T: Into<String>>(&self, name: T) -> InputBuilder<Ms> {
+        InputBuilder::new(name, InputType::Password, self.on_blur_closure.clone())
+    }
+    pub fn input_errors_for<T: Into<String>>(&self, name: T) -> Vec<Node<Ms>> {
+        let name = name.into();
+        let (form_state, _set_state) = use_state(FormState::default());
+        if let Some(input) = form_state.values.iter().find(|inp| inp.name == name) {
+            input.errors.iter().map(|err| span![err]).collect::<_>()
+        } else {
+            vec![]
+        }
+    }
 }
 
 type ValidationClosure = Arc<dyn Fn(String) -> Result<(), String>>;
 
+// InputBuilder contains all the state to output a correct (Attrs, Vec<Listeners) tuple
+// It also has special methods to set this state. For instance letters_num_and_special_required
+// sets a specific validation closure to ensure there is at least one letter , number and special character in an input
 pub struct InputBuilder<Ms> {
     name: String,
     input_type: InputType,
-    _phantom: PhantomData<Ms>,
+
     default_value: Option<String>,
     on_blur_closure: Option<Arc<dyn Fn(String) -> ()>>,
     form_on_blur_closure: Option<Arc<dyn Fn(FormState) -> ()>>,
     validate_closures: Vec<ValidationClosure>,
     validate_on: InputBlurBothEnum,
+    _phantom: PhantomData<Ms>,
 }
 
 impl<Ms> InputBuilder<Ms>
@@ -115,6 +176,19 @@ where
             input_type,
         }
     }
+
+    // renders the (Attr, Vec<Event>) tuple
+    pub fn render(&self) -> (seed::dom_types::Attrs, Vec<seed::events::Listener<Ms>>) {
+        (
+            match &self.input_type {
+                InputType::Text => self.text_attrs(self.name.clone()),
+                InputType::Password => self.password_attrs(self.name.clone()),
+            },
+            self.events(self.name.clone()),
+        )
+    }
+
+    // Options for InputBuilder
 
     pub fn letters_num_and_special_required(mut self) -> Self {
         self.validate_closures.push(Arc::new(|value| {
@@ -156,6 +230,7 @@ where
         self
     }
 
+    // Event Callbacks
     pub fn on_blur<F: Fn(String) -> () + 'static>(mut self, func: F) -> Self {
         self.on_blur_closure = Some(Arc::new(func));
         self
@@ -166,15 +241,7 @@ where
         self
     }
 
-    pub fn render(&self) -> (seed::dom_types::Attrs, Vec<seed::events::Listener<Ms>>) {
-        (
-            match &self.input_type {
-                InputType::Text => self.text_attrs(self.name.clone()),
-                InputType::Password => self.password_attrs(self.name.clone()),
-            },
-            self.events(self.name.clone()),
-        )
-    }
+    // Various Attrs for Element Types
 
     fn password_attrs<T: Into<String>>(&self, name: T) -> seed::dom_types::Attrs {
         let name = name.into();
@@ -211,6 +278,8 @@ where
             };
         attrs! {At::Type => "text", At::Value => text_input_value}
     }
+
+    // Helper events
 
     fn clear_errors_blur_event(&self, name: String) -> seed::events::Listener<Ms> {
         let (_form_state, set_state) = use_state(FormState::default());
@@ -339,6 +408,11 @@ where
         }
     }
 
+    //  Ensure forms are dealt with in alogical mannor, for instance errors are cleared first.
+    //  then the element input updated
+    // then any input specific on blur callbacks
+    // then validation run
+    // finally calling the forms general on blur callback
     fn events<T: Into<String>>(&self, name: T) -> Vec<seed::events::Listener<Ms>> {
         let name = name.into();
 
@@ -385,36 +459,11 @@ where
     }
 }
 
-impl<Ms> FormControl<Ms>
-where
-    Ms: Default,
-{
-    pub fn input_errors_for<T: Into<String>>(&self, name: T) -> Vec<Node<Ms>> {
-        let name = name.into();
-        let (form_state, _set_state) = use_state(FormState::default());
-        if let Some(input) = form_state.values.iter().find(|inp| inp.name == name) {
-            input.errors.iter().map(|err| span![err]).collect::<_>()
-        } else {
-            vec![]
-        }
-    }
-
-    pub fn text<T: Into<String>>(&self, name: T) -> InputBuilder<Ms> {
-        InputBuilder::new(name, InputType::Text, self.on_blur_closure.clone())
-    }
-
-    pub fn password<T: Into<String>>(&self, name: T) -> InputBuilder<Ms> {
-        InputBuilder::new(name, InputType::Password, self.on_blur_closure.clone())
-    }
-}
+// various enums that are used
 
 enum InputType {
     Password,
     Text,
-}
-
-pub fn use_form_state<Ms: Default>() -> (FormState, FormControl<Ms>) {
-    use_form_state_builder::<Ms>().build()
 }
 
 enum InputBlurBothEnum {
@@ -427,39 +476,4 @@ impl Default for InputBlurBothEnum {
     fn default() -> InputBlurBothEnum {
         InputBlurBothEnum::Both
     }
-}
-
-#[derive(Default)]
-pub struct StateFormBuilder<Ms> {
-    _phantom: PhantomData<Ms>,
-    on_blur_closure: Option<Arc<dyn Fn(FormState) -> ()>>,
-    validate_on: InputBlurBothEnum,
-}
-
-impl<Ms> StateFormBuilder<Ms>
-where
-    Ms: Default,
-{
-    pub fn on_blur<F: Fn(FormState) -> () + 'static>(mut self, func: F) -> Self {
-        self.on_blur_closure = Some(Arc::new(func));
-        self
-    }
-
-    pub fn build(&self) -> (FormState, FormControl<Ms>) {
-        let (form_state, _set_state) = use_state(FormState::default());
-        (
-            form_state,
-            FormControl {
-                _phantom: PhantomData,
-                on_blur_closure: self.on_blur_closure.clone(),
-            },
-        )
-    }
-}
-
-pub fn use_form_state_builder<Ms>() -> StateFormBuilder<Ms>
-where
-    Ms: Default,
-{
-    StateFormBuilder::default()
 }

@@ -8,7 +8,7 @@ use seed::prelude::*;
 // use web_sys::{Request, RequestInit, RequestMode, Response};
 
 mod form_state;
-use form_state::UpdateElLocal;
+use form_state::*;
 
 #[topo::nested]
 fn hook_style_button() -> Node<Msg> {
@@ -45,6 +45,8 @@ fn hook_style_input() -> Node<Msg> {
     ]
 }
 
+// A very simple form that only renders form elements and keeps track of state
+// It does however output the form state below the form though
 #[topo::nested]
 pub fn very_simple_form_test() -> Node<Msg> {
     let (form_state, ctl) = form_state::use_form_state::<Msg>();
@@ -55,11 +57,10 @@ pub fn very_simple_form_test() -> Node<Msg> {
     ]
 }
 
+// A Simple form that doens't have any custom callbacks
+// But rather relies on prebaked methods
 #[topo::nested]
 pub fn simple_form_test() -> Node<Msg> {
-    // form custom hook
-    // form ctl allows for rendering of various input types and
-    // handles all callbacks and local state
     let (_form_state, ctl) = form_state::use_form_state::<Msg>();
     div![
         div![
@@ -92,6 +93,9 @@ pub fn simple_form_test() -> Node<Msg> {
     ]
 }
 
+// A complex form demonstrating a formwide on blur callback
+// As well as  custom validation
+// and error outputs
 #[topo::nested]
 pub fn complex_form_test() -> Node<Msg> {
     let (_form_state, ctl) = form_state::use_form_state_builder::<Msg>()
