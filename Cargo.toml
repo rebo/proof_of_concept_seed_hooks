@@ -24,6 +24,7 @@ fancy-regex = "0.2.0"
 anymap = { git = "https://github.com/chris-morgan/anymap" }
 # reqwest = "0.9.22"
 wasm-bindgen-futures = "0.4.2"
+js-sys = "0.3.29"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2.45" # NOTE: keep in sync with wasm-bindgen version

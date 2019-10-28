@@ -34,7 +34,9 @@ pub fn get_state_with_topo_id<T: Send + Sync + 'static + Clone>(current_id: topo
         .cloned()
 }
 
-pub fn use_state<T: Send + Sync + 'static + Clone>(data: T) -> (T, Arc<dyn Fn(T)>) {
+pub fn use_state<T: Send + Sync + 'static + Clone, F: Fn() -> T>(
+    data_fn: F,
+) -> (T, Arc<dyn Fn(T)>) {
     let current_id = topo::Id::current();
     // log!(current_id);
     if let Some(stored_data) = clone_state::<T>() {
@@ -43,6 +45,7 @@ pub fn use_state<T: Send + Sync + 'static + Clone>(data: T) -> (T, Arc<dyn Fn(T)
             Arc::new(move |data| set_state_with_topo_id::<T>(data, current_id)),
         )
     } else {
+        let data = data_fn();
         set_state_with_topo_id::<T>(data.clone(), current_id);
         (
             data,

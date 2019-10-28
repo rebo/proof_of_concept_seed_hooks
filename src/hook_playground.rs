@@ -7,13 +7,50 @@ use seed::prelude::*;
 // use wasm_bindgen_futures::JsFuture;
 // use web_sys::{Request, RequestInit, RequestMode, Response};
 
+mod memo;
+
 mod form_state;
 use form_state::*;
+use memo::*;
+
+#[topo::nested]
+fn memoize_example() -> Node<Msg> {
+    // memoize executes a closure on first run and stores the result
+    // it also returns a recalc_trigger which will re run the block
+    // if the recalc trigger is passed true.
+    // this is useful for expensive calls that you only want to be recalculated on demand
+    // it would be good to memoize entire Note<Msg> trees howeever trait constraints does
+    // allow for this
+    let (date_time, recalc_trigger) = use_memoize(|| {
+        let date = js_sys::Date::new_0();
+        format!(
+            "Day: {}, Month: {}, Year:{}, Hours: {}, Minutes: {}, seconds: {}, milliseconds: {}",
+            date.get_date(),
+            date.get_month(),
+            date.get_full_year(),
+            date.get_hours(),
+            date.get_minutes(),
+            date.get_seconds(),
+            date.get_milliseconds()
+        )
+    });
+
+    div![
+        div![date_time],
+        div![button![
+            "Recalculate expensive js-sys closure",
+            input_ev("click", move |_event| {
+                recalc_trigger(true);
+                Msg::DoNothing
+            })
+        ]]
+    ]
+}
 
 #[topo::nested]
 fn hook_style_button() -> Node<Msg> {
     // Declare a new state variable which we'll call "count"
-    let (count, set_count) = use_state(0);
+    let (count, set_count) = use_state(|| 0);
     div![
         p![format!("You clicked {} times", count)],
         button![
@@ -28,7 +65,7 @@ fn hook_style_button() -> Node<Msg> {
 
 #[topo::nested]
 fn hook_style_input() -> Node<Msg> {
-    let (mut input_string, set_string) = use_state("".to_string());
+    let (mut input_string, set_string) = use_state(|| "".to_string());
 
     if input_string == "Seed" {
         input_string = "is pretty cool!".to_string();
@@ -142,14 +179,18 @@ pub fn complex_form_test() -> Node<Msg> {
 
 pub fn view() -> Node<Msg> {
     div![
-        span!["Very Simple Form"],
-        very_simple_form_test!(),
-        span!["Simple Form"],
-        simple_form_test!(),
-        span!["Complex Form"],
-        complex_form_test!(),
-        hook_style_button!(),
-        hook_style_button!(),
-        hook_style_input!(),
+        div![h1!["Memoize Example"], memoize_example!()],
+        div![
+            h1!["Forms Examples"],
+            div![h3!["Very Simple Form"], very_simple_form_test!(),],
+            div![h3!["Simple Form"], simple_form_test!()],
+            div![h3!["Complex Form"], complex_form_test!()],
+        ],
+        div![
+            h1!["Button Examples"],
+            hook_style_button!(),
+            hook_style_button!(),
+            hook_style_input!(),
+        ]
     ]
 }

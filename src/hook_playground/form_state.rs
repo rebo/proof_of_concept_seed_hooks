@@ -34,7 +34,7 @@ where
     Ms: Default,
 {
     pub fn build(&self) -> (FormState, FormControl<Ms>) {
-        let (form_state, _set_state) = use_state(FormState::default());
+        let (form_state, _set_state) = use_state(|| FormState::default());
         (
             form_state,
             FormControl {
@@ -130,7 +130,7 @@ where
     }
     pub fn input_errors_for<T: Into<String>>(&self, name: T) -> Vec<Node<Ms>> {
         let name = name.into();
-        let (form_state, _set_state) = use_state(FormState::default());
+        let (form_state, _set_state) = use_state(|| FormState::default());
         if let Some(input) = form_state.values.iter().find(|inp| inp.name == name) {
             input.errors.iter().map(|err| span![err]).collect::<_>()
         } else {
@@ -246,7 +246,7 @@ where
     fn password_attrs<T: Into<String>>(&self, name: T) -> seed::dom_types::Attrs {
         let name = name.into();
         // state and access to the form_state, form_state needs to be mutated with new InputState if one does not already exist
-        let (mut form_state, set_state) = use_state(FormState::default());
+        let (mut form_state, set_state) = use_state(|| FormState::default());
 
         let text_input_value =
             if let Some(input) = form_state.values.iter().find(|input| input.name == name) {
@@ -262,7 +262,7 @@ where
     fn text_attrs<T: Into<String>>(&self, name: T) -> seed::dom_types::Attrs {
         let name = name.into();
         // state and access to the form_state, form_state needs to be mutated with new InputState if one does not already exist
-        let (mut form_state, set_state) = use_state(FormState::default());
+        let (mut form_state, set_state) = use_state(|| FormState::default());
 
         let text_input_value =
             if let Some(input) = form_state.values.iter().find(|input| input.name == name) {
@@ -282,7 +282,7 @@ where
     // Helper events
 
     fn clear_errors_blur_event(&self, name: String) -> seed::events::Listener<Ms> {
-        let (_form_state, set_state) = use_state(FormState::default());
+        let (_form_state, set_state) = use_state(|| FormState::default());
         let form_state_getter = state_getter::<FormState>();
         let field_name = name.clone();
         input_ev("blur", move |_text| {
@@ -301,7 +301,7 @@ where
     }
 
     fn clear_errors_input_event(&self, name: String) -> seed::events::Listener<Ms> {
-        let (_form_state, set_state) = use_state(FormState::default());
+        let (_form_state, set_state) = use_state(|| FormState::default());
         let form_state_getter = state_getter::<FormState>();
         let field_name = name.clone();
         input_ev("input", move |_text| {
@@ -321,7 +321,7 @@ where
 
     fn update_value_input_event(&self, name: String) -> seed::events::Listener<Ms> {
         let field_name = name.clone();
-        let (_form_state, set_state) = use_state(FormState::default());
+        let (_form_state, set_state) = use_state(|| FormState::default());
         let form_state_getter = state_getter::<FormState>();
         input_ev("input", move |text| {
             if let Some(mut form_state) = form_state_getter() {
@@ -380,7 +380,7 @@ where
     ) -> Option<seed::events::Listener<Ms>> {
         let closures = self.validate_closures.clone();
 
-        let (_form_state, set_state) = use_state(FormState::default());
+        let (_form_state, set_state) = use_state(|| FormState::default());
         let form_state_getter = state_getter::<FormState>();
         let field_name = name.clone();
         if !closures.is_empty() {
