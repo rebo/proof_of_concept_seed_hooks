@@ -64,7 +64,11 @@ pub fn simple_form_test() -> Node<Msg> {
     div![
         div![
             label!["description"],
-            input![ctl.text("description").required().render()],
+            input![ctl
+                .text("description")
+                .required()
+                .default_value("I love Seed!")
+                .render()],
             ctl.input_errors_for("description"),
         ],
         div![
@@ -90,7 +94,13 @@ pub fn simple_form_test() -> Node<Msg> {
 
 #[topo::nested]
 pub fn complex_form_test() -> Node<Msg> {
-    let (_form_state, ctl) = form_state::use_form_state_builder::<Msg>().build();
+    let (_form_state, ctl) = form_state::use_form_state_builder::<Msg>()
+        .on_blur(|form_state| {
+            log!("Outputing the form state on blur due to the #on_blur closure");
+            log!(form_state);
+        })
+        .build();
+
     div![
         div![
             label!["description"],
