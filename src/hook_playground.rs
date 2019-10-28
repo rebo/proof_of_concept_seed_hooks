@@ -35,12 +35,24 @@ fn memoize_example() -> Node<Msg> {
         )
     });
 
+    // Normally one issue is that only one value of one type can be memoized per
+    // execution context.
+    // However inside use_memoize is run inside its own call context
+    // therefore everything should be ok
+
+    let (other_string, other_recalc_trigger) = use_memoize(|| {
+        let date = js_sys::Date::new_0();
+        format!("milliseconds only: {}", date.get_milliseconds())
+    });
+
     div![
         div![date_time],
+        div![other_string],
         div![button![
             "Recalculate expensive js-sys closure",
             input_ev("click", move |_event| {
                 recalc_trigger(true);
+                other_recalc_trigger(true);
                 Msg::DoNothing
             })
         ]]
