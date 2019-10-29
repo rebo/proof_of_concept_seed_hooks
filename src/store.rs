@@ -8,7 +8,7 @@ use topo::*;
 
 use std::marker::PhantomData;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StateAccess<T> {
     pub id: topo::Id,
     _phantom_data: PhantomData<T>,
