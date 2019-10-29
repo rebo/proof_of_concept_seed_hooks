@@ -60,6 +60,34 @@ fn memoize_example() -> Node<Msg> {
 }
 
 #[topo::nested]
+fn child_component_example(button_disabled_status_access: StateAccess<bool>) -> Node<Msg> {
+    div![button![
+        "Child Button that triggers change in parent state",
+        input_ev("click", move |_text| {
+            button_disabled_status_access.set(!button_disabled_status_access.get().unwrap());
+            Msg::DoNothing
+        })
+    ],]
+}
+#[topo::nested]
+fn parent_and_child_components_example() -> Node<Msg> {
+    // by passing the accessor to child components we can access different 'components'.
+
+    let (button_disabled_status, button_disabled_status_access) = use_state(|| false);
+    div![
+        button![
+            "Parent Button",
+            if button_disabled_status {
+                attrs![At::Disabled => true]
+            } else {
+                attrs![]
+            }
+        ],
+        child_component_example!(button_disabled_status_access)
+    ]
+}
+
+#[topo::nested]
 fn hook_style_button() -> Node<Msg> {
     // Declare a new state variable which we'll call "count"
     let (count, use_count) = use_state(|| 0);
@@ -191,6 +219,10 @@ pub fn complex_form_test() -> Node<Msg> {
 
 pub fn view() -> Node<Msg> {
     div![
+        div![
+            h1!["Parent Child Example"],
+            parent_and_child_components_example!()
+        ],
         div![h1!["Memoize Example"], memoize_example!()],
         div![
             h1!["Forms Examples"],
