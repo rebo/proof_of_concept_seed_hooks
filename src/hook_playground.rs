@@ -62,7 +62,7 @@ fn memoize_example() -> Node<Msg> {
 #[topo::nested]
 fn child_component_example(button_disabled_status_access: StateAccess<bool>) -> Node<Msg> {
     div![button![
-        "Child Button that triggers change in parent state",
+        "Child Button - Triggers change in parent state",
         input_ev("click", move |_text| {
             button_disabled_status_access.set(!button_disabled_status_access.get().unwrap());
             Msg::DoNothing
@@ -77,11 +77,7 @@ fn parent_and_child_components_example() -> Node<Msg> {
     div![
         button![
             "Parent Button",
-            if button_disabled_status {
-                attrs![At::Disabled => true]
-            } else {
-                attrs![]
-            }
+            attrs![At::Disabled => button_disabled_status.as_at_value()]
         ],
         child_component_example!(button_disabled_status_access)
     ]
