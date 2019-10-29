@@ -86,12 +86,12 @@ fn parent_and_child_components_example() -> Node<Msg> {
 #[topo::nested]
 fn hook_style_button() -> Node<Msg> {
     // Declare a new state variable which we'll call "count"
-    let (count, use_count) = use_state(|| 0);
+    let (count, count_access) = use_state(|| 0);
     div![
         p![format!("You clicked {} times", count)],
         button![
             input_ev("click", move |_| {
-                use_count.set(count + 1);
+                count_access.set(count + 1);
                 Msg::DoNothing
             }),
             format!("Click Me × {}", count)
@@ -101,7 +101,7 @@ fn hook_style_button() -> Node<Msg> {
 
 #[topo::nested]
 fn hook_style_input() -> Node<Msg> {
-    let (mut input_string, use_string) = use_state(|| "".to_string());
+    let (mut input_string, string_access) = use_state(|| "".to_string());
 
     if input_string == "Seed" {
         input_string = "is pretty cool!".to_string();
@@ -111,7 +111,7 @@ fn hook_style_input() -> Node<Msg> {
         input![
             attrs! {At::Type => "text", At::Value => input_string},
             input_ev("input", move |text| {
-                use_string.set(text);
+                string_access.set(text);
                 Msg::DoNothing
             })
         ]

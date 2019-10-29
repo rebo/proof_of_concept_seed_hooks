@@ -7,18 +7,17 @@ This is a complete counting button with state, no messages required:
 
 ```rust
 #[topo::nested]
-fn example() -> Node<Msg> {
+fn hook_style_button() -> Node<Msg> {
     // Declare a new state variable which we'll call "count"
-    let (count, set_count) = use_state(0);
-
+    let (count, count_access) = use_state(|| 0);
     div![
         p![format!("You clicked {} times", count)],
         button![
             input_ev("click", move |_| {
-                set_count(count + 1);
+                count_access.set(count + 1);
                 Msg::DoNothing
             }),
-            "Click Me"
+            format!("Click Me × {}", count)
         ]
     ]
 }
