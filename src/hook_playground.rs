@@ -122,6 +122,9 @@ fn two_way_components_example() -> Node<Msg> {
     // we need an accessor that can hold two access states.
     // after this is passed to peer compoments this is then updated with reference
     // to all peers
+    //
+    // That said at this stage it is probably better to just use the whole traditional Msg:: stack.
+    //
     let (_state, shared_channel_access): ((StateAccess<String>, StateAccess<String>), _) =
         use_state(|| {
             let id = topo::Id::current();
