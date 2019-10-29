@@ -246,14 +246,14 @@ where
     fn password_attrs<T: Into<String>>(&self, name: T) -> seed::dom_types::Attrs {
         let name = name.into();
         // state and access to the form_state, form_state needs to be mutated with new InputState if one does not already exist
-        let (mut form_state, set_state) = use_state(FormState::default);
+        let (mut form_state, form_state_access) = use_state(FormState::default);
 
         let text_input_value =
             if let Some(input) = form_state.values.iter().find(|input| input.name == name) {
                 input.value.clone()
             } else {
                 form_state.values.push(InputState::new(name));
-                set_state(form_state.clone());
+                form_state_access.set(form_state.clone());
                 "".to_string()
             };
         attrs! {At::Type => "password", At::Value => text_input_value}
@@ -262,18 +262,18 @@ where
     fn text_attrs<T: Into<String>>(&self, name: T) -> seed::dom_types::Attrs {
         let name = name.into();
         // state and access to the form_state, form_state needs to be mutated with new InputState if one does not already exist
-        let (mut form_state, set_state) = use_state(FormState::default);
+        let (mut form_state, form_state_access) = use_state(FormState::default);
 
         let text_input_value =
             if let Some(input) = form_state.values.iter().find(|input| input.name == name) {
                 input.value.clone()
             } else if let Some(value) = &self.default_value {
                 form_state.values.push(InputState::new(name));
-                set_state(form_state.clone());
+                form_state_access.set(form_state.clone());
                 value.clone()
             } else {
                 form_state.values.push(InputState::new(name));
-                set_state(form_state.clone());
+                form_state_access.set(form_state.clone());
                 "".to_string()
             };
         attrs! {At::Type => "text", At::Value => text_input_value}
@@ -282,11 +282,11 @@ where
     // Helper events
 
     fn clear_errors_blur_event(&self, name: String) -> seed::events::Listener<Ms> {
-        let (_form_state, set_state) = use_state(FormState::default);
-        let form_state_getter = state_getter::<FormState>();
+        let (_form_state, form_state_access) = use_state(FormState::default);
+        // let form_state_getter = state_getter::<FormState>();
         let field_name = name.clone();
         input_ev("blur", move |_text| {
-            if let Some(mut form_state) = form_state_getter() {
+            if let Some(mut form_state) = form_state_access.get() {
                 if let Some(input) = form_state
                     .values
                     .iter_mut()
@@ -294,18 +294,17 @@ where
                 {
                     input.errors = vec![];
                 }
-                set_state(form_state);
+                form_state_access.set(form_state);
             }
             Ms::default()
         })
     }
 
     fn clear_errors_input_event(&self, name: String) -> seed::events::Listener<Ms> {
-        let (_form_state, set_state) = use_state(FormState::default);
-        let form_state_getter = state_getter::<FormState>();
+        let (_form_state, form_state_access) = use_state(FormState::default);
         let field_name = name.clone();
         input_ev("input", move |_text| {
-            if let Some(mut form_state) = form_state_getter() {
+            if let Some(mut form_state) = form_state_access.get() {
                 if let Some(input) = form_state
                     .values
                     .iter_mut()
@@ -313,7 +312,7 @@ where
                 {
                     input.errors = vec![];
                 }
-                set_state(form_state);
+                form_state_access.set(form_state);
             }
             Ms::default()
         })
@@ -321,10 +320,9 @@ where
 
     fn update_value_input_event(&self, name: String) -> seed::events::Listener<Ms> {
         let field_name = name.clone();
-        let (_form_state, set_state) = use_state(FormState::default);
-        let form_state_getter = state_getter::<FormState>();
+        let (_form_state, form_state_access) = use_state(FormState::default);
         input_ev("input", move |text| {
-            if let Some(mut form_state) = form_state_getter() {
+            if let Some(mut form_state) = form_state_access.get() {
                 if let Some(input) = form_state
                     .values
                     .iter_mut()
@@ -338,7 +336,7 @@ where
                         input.touched = false;
                     }
                 }
-                set_state(form_state);
+                form_state_access.set(form_state);
             }
             Ms::default()
         })
@@ -380,12 +378,11 @@ where
     ) -> Option<seed::events::Listener<Ms>> {
         let closures = self.validate_closures.clone();
 
-        let (_form_state, set_state) = use_state(FormState::default);
-        let form_state_getter = state_getter::<FormState>();
+        let (_form_state, form_state_access) = use_state(FormState::default);
         let field_name = name.clone();
         if !closures.is_empty() {
             Some(input_ev(event_type, move |text| {
-                if let Some(mut form_state) = form_state_getter() {
+                if let Some(mut form_state) = form_state_access.get() {
                     // if the callback generates an error add it to the errors vec field
                     for closure in closures.iter() {
                         let text = text.clone();
@@ -397,7 +394,7 @@ where
                             {
                                 input.errors.push(error);
                             }
-                            set_state(form_state.clone());
+                            form_state_access.set(form_state.clone());
                         };
                     }
                 }

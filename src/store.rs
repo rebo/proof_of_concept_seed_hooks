@@ -6,6 +6,34 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use topo::*;
 
+use std::marker::PhantomData;
+
+#[derive(Clone)]
+pub struct StateAccess<T> {
+    pub id: topo::Id,
+    _phantom_data: PhantomData<T>,
+}
+
+impl<T> StateAccess<T>
+where
+    T: Send + Sync + 'static + Clone,
+{
+    pub fn new(id: topo::Id) -> StateAccess<T> {
+        StateAccess {
+            id,
+            _phantom_data: PhantomData,
+        }
+    }
+
+    pub fn set(&self, value: T) {
+        set_state_with_topo_id(value, self.id);
+    }
+
+    pub fn get(&self) -> Option<T> {
+        get_state_with_topo_id::<T>(self.id)
+    }
+}
+
 #[derive(Default, Debug)]
 pub struct Store {
     pub id_to_key_map: HashMap<topo::Id, DefaultKey>,
@@ -36,21 +64,15 @@ pub fn get_state_with_topo_id<T: Send + Sync + 'static + Clone>(current_id: topo
 
 pub fn use_state<T: Send + Sync + 'static + Clone, F: Fn() -> T>(
     data_fn: F,
-) -> (T, Arc<dyn Fn(T)>) {
+) -> (T, StateAccess<T>) {
     let current_id = topo::Id::current();
     // log!(current_id);
     if let Some(stored_data) = clone_state::<T>() {
-        (
-            stored_data,
-            Arc::new(move |data| set_state_with_topo_id::<T>(data, current_id)),
-        )
+        (stored_data, StateAccess::new(current_id))
     } else {
         let data = data_fn();
         set_state_with_topo_id::<T>(data.clone(), current_id);
-        (
-            data,
-            Arc::new(move |new_data| set_state_with_topo_id::<T>(new_data, current_id)),
-        )
+        (data, StateAccess::new(current_id))
     }
 }
 

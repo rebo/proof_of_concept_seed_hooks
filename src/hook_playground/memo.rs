@@ -17,7 +17,7 @@ pub fn use_memoize<T: Sync + Send + 'static + Clone, F: Fn() -> T>(
     func: F,
 ) -> (T, Arc<dyn Fn(bool)>) {
     topo::call!({
-        let (update, set_recalc_trigger) = use_state(|| false);
+        let (update, recalc_trigger_access) = use_state(|| false);
 
         // let arc_func = Arc::new(func);
         let new_func = || func();
@@ -25,15 +25,21 @@ pub fn use_memoize<T: Sync + Send + 'static + Clone, F: Fn() -> T>(
         // by definition this will keep returning 'value'
         // until update is set to true.
 
-        let (value, set_value) = use_state(new_func);
+        let (value, value_access) = use_state(new_func);
 
         if update {
             let value = func();
-            set_value(value.clone());
-            set_recalc_trigger(false);
-            (value, set_recalc_trigger)
+            value_access.set(value.clone());
+            recalc_trigger_access.set(false);
+            (
+                value,
+                Arc::new(move |trigger| recalc_trigger_access.set(trigger)),
+            )
         } else {
-            (value, set_recalc_trigger)
+            (
+                value,
+                Arc::new(move |trigger| recalc_trigger_access.set(trigger)),
+            )
         }
     })
 }

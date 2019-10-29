@@ -62,12 +62,12 @@ fn memoize_example() -> Node<Msg> {
 #[topo::nested]
 fn hook_style_button() -> Node<Msg> {
     // Declare a new state variable which we'll call "count"
-    let (count, set_count) = use_state(|| 0);
+    let (count, use_count) = use_state(|| 0);
     div![
         p![format!("You clicked {} times", count)],
         button![
             input_ev("click", move |_| {
-                set_count(count + 1);
+                use_count.set(count + 1);
                 Msg::DoNothing
             }),
             format!("Click Me × {}", count)
@@ -77,7 +77,7 @@ fn hook_style_button() -> Node<Msg> {
 
 #[topo::nested]
 fn hook_style_input() -> Node<Msg> {
-    let (mut input_string, set_string) = use_state(|| "".to_string());
+    let (mut input_string, use_string) = use_state(|| "".to_string());
 
     if input_string == "Seed" {
         input_string = "is pretty cool!".to_string();
@@ -87,7 +87,7 @@ fn hook_style_input() -> Node<Msg> {
         input![
             attrs! {At::Type => "text", At::Value => input_string},
             input_ev("input", move |text| {
-                set_string(text);
+                use_string.set(text);
                 Msg::DoNothing
             })
         ]
