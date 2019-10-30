@@ -1,7 +1,8 @@
 use super::Msg;
 use crate::store::*;
 use seed::prelude::*;
-// use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::Arc;
 // use wasm_bindgen::JsCast;
 // use wasm_bindgen_futures;
 // use wasm_bindgen_futures::JsFuture;
@@ -273,8 +274,26 @@ pub fn complex_form_test() -> Node<Msg> {
     ]
 }
 
+fn send_view_to_back(
+    portal_access: StateAccess<Arc<dyn Fn() -> Node<Msg> + Send + Sync>>,
+) -> Node<Msg> {
+    button![
+        "render at end",
+        input_ev("click", move |_| {
+            portal_access.set(Arc::new(|| span!["HERE!"]));
+            Msg::DoNothing
+        })
+    ]
+}
+
 pub fn view() -> Node<Msg> {
+    // we can set up a 'portal' state which means i can send views to
+    // the portal 'getter' from anywhere on the page.
+    let default_arced_closure: Arc<dyn Fn() -> Node<Msg> + Send + Sync> = Arc::new(|| empty![]);
+    let (_, portal_access) = use_state(|| default_arced_closure);
+
     div![
+        div![send_view_to_back(portal_access.clone())],
         div![
             h1!["Parent Child Example"],
             parent_and_child_components_example!()
@@ -299,6 +318,12 @@ pub fn view() -> Node<Msg> {
             hook_style_button!(),
             hook_style_button!(),
             hook_style_input!(),
-        ]
+        ],
+        div![h1!["moved components to this 'portal'"]],
+        if let Some(arc) = portal_access.get() {
+            arc()
+        } else {
+            empty![]
+        }
     ]
 }
