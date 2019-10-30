@@ -67,3 +67,83 @@ pub fn use_two_way<
         (view1, view2)
     })
 }
+
+// Above code based on below
+// #[topo::nested]
+// fn two_way_components_example() -> Node<Msg> {
+//     // two way communication between two compoments
+//     // we need an accessor that can hold two access states.
+//     // after this is passed to peer compoments this is then updated with reference
+//     // to all peers
+//     //
+//     // That said at this stage it is probably better to just use the whole traditional Msg:: stack.
+//     //
+//     let (_state, shared_channel_access): ((StateAccess<String>, StateAccess<String>), _) =
+//         use_state(|| {
+//             let id = topo::Id::current();
+//             (StateAccess::new(id), StateAccess::new(id))
+//         });
+
+//     // execute first peer in a call! context returning the view and peer accessor
+//     let (first_component_access, view1) = topo::call!({
+//         let (_, context_access) = use_state(|| "".to_string());
+//         (
+//             context_access,
+//             first_child_component(shared_channel_access.clone()),
+//         )
+//     });
+//     // execute second peer in a call! context returning the view and peer accessor
+//     let (second_component_access, view2) = topo::call!({
+//         let (_, context_access) = use_state(|| "".to_string());
+//         (
+//             context_access,
+//             second_child_component(shared_channel_access.clone()),
+//         )
+//     });
+
+//     // set both peer accessors to the main shared accessor
+//     shared_channel_access.set((first_component_access, second_component_access));
+//     div![view1, view2]
+// }
+
+// fn first_child_component(shared_channel_access: SharedAccess<String>) -> Node<Msg> {
+//     let cloned_shared_channel_access = shared_channel_access.clone();
+//     div![
+//         label!["First Child Component, this input will send to the second component"],
+//         input![input_ev("input", move |text| {
+//             cloned_shared_channel_access.get().unwrap().1.set(text);
+//             Msg::DoNothing
+//         })],
+//         div![format!(
+//             "Second Child input : {}",
+//             shared_channel_access
+//                 .get()
+//                 .unwrap()
+//                 .0
+//                 .get()
+//                 .unwrap_or_default()
+//         )]
+//     ]
+// }
+
+// fn second_child_component(
+//     shared_channel_access: StateAccess<(StateAccess<String>, StateAccess<String>)>,
+// ) -> Node<Msg> {
+//     let cloned_shared_channel_access = shared_channel_access.clone();
+//     div![
+//         label!["First Child Component, this input will send to the second component"],
+//         input![input_ev("input", move |text| {
+//             cloned_shared_channel_access.get().unwrap().0.set(text);
+//             Msg::DoNothing
+//         })],
+//         div![format!(
+//             "Second Child input : {}",
+//             shared_channel_access
+//                 .get()
+//                 .unwrap()
+//                 .1
+//                 .get()
+//                 .unwrap_or_default()
+//         )]
+//     ]
+// }
