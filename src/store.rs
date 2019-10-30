@@ -62,7 +62,7 @@ pub fn get_state_with_topo_id<T: Send + Sync + 'static + Clone>(current_id: topo
         .cloned()
 }
 
-pub fn use_state<T: Send + Sync + 'static + Clone, F: Fn() -> T>(
+pub fn use_state<T: Send + Sync + 'static + Clone, F: FnOnce() -> T>(
     data_fn: F,
 ) -> (T, StateAccess<T>) {
     let current_id = topo::Id::current();

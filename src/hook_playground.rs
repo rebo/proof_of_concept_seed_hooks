@@ -13,6 +13,9 @@ mod form_state;
 use form_state::*;
 use memo::*;
 
+mod two_way;
+use two_way::*;
+
 #[topo::nested]
 fn memoize_example() -> Node<Msg> {
     // memoize executes a closure on first run and stores the result
@@ -105,16 +108,40 @@ fn complex_parent_and_child_components_example() -> Node<Msg> {
     ]
 }
 
-// #[topo::nested]
-// fn complex_child_component_example(parent_text_access: StateAccess<String>) -> Node<Msg> {
-//     div![
-//         label!["this is a child component's input:"],
-//         input![input_ev("input", move |text| {
-//             parent_text_access.set(text);
-//             Msg::DoNothing
-//         })],
-//     ]
-// }
+#[topo::nested]
+fn simplified_two_way() -> Node<Msg> {
+    let (view1, view2) = use_two_way("".to_string(), first, second);
+    div![view1, view2]
+}
+
+fn first(shared: SharedAccess<String>) -> Node<Msg> {
+    // let cloned_shared_channel_access = shared.clone();
+    div![
+        label!["First Child Component, this input will send to the second component"],
+        div![format!(
+            "Second Child input : {}",
+            shared.get_left_state().unwrap_or_default()
+        )],
+        input![input_ev("input", move |text| {
+            shared.set_right_state(text);
+            Msg::DoNothing
+        })],
+    ]
+}
+
+fn second(shared: SharedAccess<String>) -> Node<Msg> {
+    div![
+        label!["Second Child Component, this input will send to the first component"],
+        div![format!(
+            "First Child input : {}",
+            shared.get_right_state().unwrap_or_default()
+        )],
+        input![input_ev("input", move |text| {
+            shared.set_left_state(text);
+            Msg::DoNothing
+        })],
+    ]
+}
 
 #[topo::nested]
 fn two_way_components_example() -> Node<Msg> {
@@ -153,9 +180,7 @@ fn two_way_components_example() -> Node<Msg> {
     div![view1, view2]
 }
 
-fn first_child_component(
-    shared_channel_access: StateAccess<(StateAccess<String>, StateAccess<String>)>,
-) -> Node<Msg> {
+fn first_child_component(shared_channel_access: SharedAccess<String>) -> Node<Msg> {
     let cloned_shared_channel_access = shared_channel_access.clone();
     div![
         label!["First Child Component, this input will send to the second component"],
@@ -340,6 +365,10 @@ pub fn view() -> Node<Msg> {
         div![
             h1!["Two Way communcation between peers Example"],
             two_way_components_example!()
+        ],
+        div![
+            h1!["Simplified Two Way communcation between peers Example"],
+            simplified_two_way!()
         ],
         div![h1!["Memoize Example"], memoize_example!()],
         div![
