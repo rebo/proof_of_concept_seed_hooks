@@ -1,6 +1,5 @@
-use crate::store::*;
+use comp_state::{use_state, StateAccess};
 use seed::prelude::*;
-use std::marker::PhantomData;
 
 pub fn basic_render<T, Ms>(list_control: ListControl<T, Ms>) -> Node<Ms>
 where
@@ -8,7 +7,6 @@ where
     Ms: Clone + Send + Sync + 'static,
 {
     let list = list_control.list_access.get().unwrap();
-
     div![ul![list
         .items
         .iter()
@@ -105,7 +103,7 @@ where
     // a b d e f g
     pub fn move_item_to_position(&self, old_idx: usize, new_idx: usize) {
         let mut list = self.list_access.get().unwrap();
-        if new_idx > list.items.len() - 1 || old_idx > list.items.len() - 1 {
+        if new_idx > list.items.len() || old_idx > list.items.len() - 1 {
             return;
         }
 

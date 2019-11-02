@@ -1,5 +1,5 @@
 use super::Msg;
-use crate::store::*;
+use comp_state::{use_state, StateAccess};
 use seed::prelude::*;
 use std::sync::Arc;
 // use wasm_bindgen::JsCast;
@@ -7,16 +7,10 @@ use std::sync::Arc;
 // use wasm_bindgen_futures::JsFuture;
 // use web_sys::{Request, RequestInit, RequestMode, Response};
 
-mod list;
-use list::use_list;
-mod memo;
-
-mod form_state;
-use form_state::*;
-use memo::*;
-
-mod two_way;
-use two_way::*;
+use seed_comp_helpers::form_state::{use_form_state, use_form_state_builder, UpdateElLocal};
+use seed_comp_helpers::list::{basic_render, use_list};
+use seed_comp_helpers::memo::use_memoize;
+use seed_comp_helpers::two_way::*;
 
 #[topo::nested]
 fn memoize_example() -> Node<Msg> {
@@ -184,7 +178,7 @@ fn hook_style_input() -> Node<Msg> {
 // It does however output the form state below the form though
 #[topo::nested]
 pub fn very_simple_form_test() -> Node<Msg> {
-    let (form_state, ctl) = form_state::use_form_state::<Msg>();
+    let (form_state, ctl) = use_form_state::<Msg>();
     div![
         div![input![ctl.text("username").render()],],
         div![input![ctl.password("pword").render()],],
@@ -196,7 +190,7 @@ pub fn very_simple_form_test() -> Node<Msg> {
 // But rather relies on prebaked methods
 #[topo::nested]
 pub fn simple_form_test() -> Node<Msg> {
-    let (_form_state, ctl) = form_state::use_form_state::<Msg>();
+    let (_form_state, ctl) = use_form_state::<Msg>();
     div![
         div![
             label!["description"],
@@ -233,7 +227,7 @@ pub fn simple_form_test() -> Node<Msg> {
 // and error outputs
 #[topo::nested]
 pub fn complex_form_test() -> Node<Msg> {
-    let (_form_state, ctl) = form_state::use_form_state_builder::<Msg>()
+    let (_form_state, ctl) = use_form_state_builder::<Msg>()
         .on_blur(|form_state| {
             log!("Outputing the form state on blur due to the #on_blur closure");
             log!(form_state);
@@ -310,7 +304,7 @@ pub fn list_example() -> Node<Msg> {
     let list_control_clone = list_control.clone();
     let add_state_access_clone = add_state_access.clone();
     div![
-        list::basic_render(list_control),
+        basic_render(list_control),
         div![
             label!["Add:"],
             input![

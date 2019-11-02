@@ -1,10 +1,8 @@
 use anymap::any::Any;
 use once_cell::sync::Lazy;
-use serde::Serialize;
-use slotmap::{new_key_type, DefaultKey, Key, SecondaryMap, SlotMap};
+use slotmap::{DefaultKey, Key, SecondaryMap, SlotMap};
 use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use topo::*;
 
 use std::marker::PhantomData;
@@ -55,10 +53,6 @@ pub fn set_state_with_topo_id<T: Send + Sync + 'static + Clone>(data: T, current
         .set_state_with_topo_id::<T>(data, current_id);
 }
 
-pub fn set_state<T: Send + Sync + 'static + Clone>(data: T) {
-    STORE.lock().unwrap().set_state::<T>(data);
-}
-
 pub fn get_state_with_topo_id<T: Send + Sync + 'static + Clone>(current_id: topo::Id) -> Option<T> {
     STORE
         .lock()
@@ -80,16 +74,6 @@ pub fn use_state<T: Send + Sync + 'static + Clone, F: FnOnce() -> T>(
         (data, StateAccess::new(current_id))
     }
 }
-
-pub fn state_getter<T: Send + Sync + 'static + Clone>() -> Arc<dyn Fn() -> Option<T>> {
-    let current_id = topo::Id::current();
-    Arc::new(move || get_state_with_topo_id::<T>(current_id))
-}
-
-// }
-// pub fn get_state<T: Send + Sync + 'static + Clone>() -> Option<T> {
-//     STORE.lock().unwrap().get_state::<T>().cloned();
-// }
 
 impl Store {
     // Constructor
@@ -113,11 +97,6 @@ impl Store {
             }
             (_, _) => None,
         }
-    }
-
-    pub fn set_state<T: Send + Sync + 'static>(&mut self, data: T) {
-        let current_id = topo::Id::current();
-        self.set_state_with_topo_id::<T>(data, current_id);
     }
 
     pub fn get_state_with_topo_id<T: Send + Sync + 'static>(
@@ -183,3 +162,18 @@ impl Store {
         self.anymap.insert(sm);
     }
 }
+
+// pub fn set_state<T: Send + Sync + 'static>(&mut self, data: T) {
+//     let current_id = topo::Id::current();
+//     self.set_state_with_topo_id::<T>(data, current_id);
+// }
+
+pub fn state_getter<T: Send + Sync + 'static + Clone>() -> Arc<dyn Fn() -> Option<T>> {
+    let current_id = topo::Id::current();
+    Arc::new(move || get_state_with_topo_id::<T>(current_id))
+}
+
+// }
+// pub fn get_state<T: Send + Sync + 'static + Clone>() -> Option<T> {
+//     STORE.lock().unwrap().get_state::<T>().cloned();
+// }

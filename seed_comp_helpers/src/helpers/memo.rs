@@ -11,7 +11,7 @@ use std::sync::Arc;
 //     value.get::<T>().cloned().unwrap()
 // }
 
-use crate::store::*;
+use comp_state::*;
 
 pub fn use_memoize<T: Sync + Send + 'static + Clone, F: Fn() -> T>(
     func: F,

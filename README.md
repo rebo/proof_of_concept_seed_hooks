@@ -1,5 +1,7 @@
-# EXPERIMENTAL AND PROBABLY BROKEN 
-# React set state Hooks in Seed Proof of concept.
+# EXPERIMENTAL: React style Hook & Custom Hooks in Seed 
+
+
+Seed is a frontend framework written in Rust and compiled to Wasm. This is an attempt to see if react style 'hooks' can work with seed.
 
 **Example:**
 
@@ -43,7 +45,7 @@ function Example() {
 ```
 See the first State Hook Example for a comparision: https://reactjs.org/docs/hooks-overview.html
 
-It's possible to write 'custom hooks' for instance form validation that allows the below to all happen in a view function (Note that this is just a toy example and not fully usable):
+It's also possible to write 'custom hooks' for instance form validation that allows the below to all happen in a view function (Note that this is just a toy example and not fully usable):
 
 ```rust
 #[topo::nested]
@@ -74,10 +76,16 @@ pub fn simple_form_test() -> Node<Msg> {
 }
 ```
 
+This workspace is divided into 3 sub-projects.
+
+1.comp_state - A wrapper/plumbing for moxie/topo sets up a Global for contexts to store arbitraty data in. This provides the basic use_state() function that lets a topological aware execution context store and retreive state.  This is analogous to use_state in React. This crate does not depend on seed.
+2.seed_comp_helpers - Experimental helper functions for use within seed. Effectively these are custom hooks that build on functionality provided by use_state()
+Current helpers include -  form state,  list management ,  memoization and two_way component communicaiton. All of these are proof of concept only and need to be fully developed to be any real use.
+3.example_seed_app - This is a full app that demonstrates the use of the seed helper and comp_state directly. Everything is loaded in one page, see hook_playground.
 
 **Caveats:**
 
-- Dont judge me I was bored this afteroon, this is almost certainly broken and a bad idea
+- This actually now seems to work more or less okay.
 
 - this 100% uses topo code from Moxie (https://github.com/anp/moxie), cut and pasted into this example because the latest version of topo was not published as a separate crate. 
 
@@ -87,19 +95,19 @@ pub fn simple_form_test() -> Node<Msg> {
 
 - topo creates a new execution context for every `[topo::nested]` annoted function, and every `topo::call!` block. Further calls to `topo::root!` re-roots the execution context. The re-rooting allows for consistent execution contexts for the same components as long as you re-root at the start of the base view function. This means that one can store and retrieve local data for an individual component which has been annoted by `topo::nested`.
 
+- The execution context is not only determined by the order of calling `[topo::nested]` functions but also the source location of these calls. This means that state is consistent and stable even though branching logic might call topologically aware functions in different orders.
+
 - See this awesome talk explaining how topo works: https://www.youtube.com/watch?v=tmM756XZt20
 
-- a type gets stored with : `get_set_state::<String>(text)` which stores `text` in the component for the `String` type.
+- a type gets stored with : `let (my_string, string_access) = use_state::<String>(||text)` which stores `text` in the component for the `String` type. This returns a tuple, with my_string being a clone of the latest state and string_access being an accessor which can get or set this value. 
 
-- there are several ways of getting a reference to a stored value. If you are okay with a clone the easiest way is `clone_state::<String>()`. However if you need a reference you need to access the global static `STORE.lock().unwrap().get::<String>()` and deal with the borrow checker issues.
+- The accessor is useful because it can be passed to callbacks or cloned or called from different topological contexts. i.e. `string_acces.set(new_text)` will work no matter where it is called.
 
-- currently only 1 type per context is storable, however if you want to store more than 1 String say, you can create a `HashMap<key,String>` or `Vec` and store that.
+- currently comp_state only exposes a clone to stored values. If you want references you have to hack it and dig into `STORE.lock().unwrap().get::<String>()`.
 
-- if you want to set the state from an event callback (quite common) you should use  `get_set_state_with_topo_id::<String>(text, current_id)` where current_id is obtained in the component itself. The reason for this is that the event callback will not run in the same context as the component. You can do this with `let current_id = topo::Id::current()`.
+- currently only 1 type per context is storable, however if you want to store more than 1 String say, you can create a `HashMap<key,String>` , `Vec`, or NewType and store that.
 
-- I have no idea how 'stable' this pattern is particularly when you might have views iterating all over the place, particulary if you can't be certain of the order they are called in.
-
-- If you want to use react style you can call `store::use_state::<u32>(0)` which returns a  `(count, set_count)`. `count` is the data being returned and `set_count` is an Arc boxed closure that can be called to update the state. The advantage of this is that the currentId is generated and passed automatically.
+- After some testing this now seems fairly stable. You still shouldn't use it though.
 
 **Why would anyone want to do this?**
 
@@ -107,13 +115,15 @@ pub fn simple_form_test() -> Node<Msg> {
 
 - Just sometimes I get put off adjusting my app because of the Msg:: chain chase all over the place to keep track of one simple thing. I wanted to see if I could somehow have some more isolated changes in one function (component) with stored state.
 
-- Per compoment data means for simple compoents I dont need to pollute the app with non-business logic.
+- Per compoment data means for simple components I dont need to pollute the app with non-business logic.
+
+- This should make it easier to create reusable chunks of logic that can be helpful in a different apps without having to wire in everything TEA style.
 
 - In theory this might be good, who knows, so lets try...
 
-- This only stores state, which was the main reason I needed it.
-
 **Standard quickstart stuff**
+
+`cd example_seed_app`
 
 `rustup update`
 

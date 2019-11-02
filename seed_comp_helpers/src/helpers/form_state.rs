@@ -2,7 +2,7 @@
 // only password and text inputs implemented
 // this can be easily extendable to other other form element types
 
-use crate::store::*;
+use comp_state::{state_getter, use_state};
 use fancy_regex::Regex;
 use seed::prelude::*;
 use std::sync::Arc;

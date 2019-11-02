@@ -1,4 +1,4 @@
-use crate::store::*;
+use comp_state::{use_state, StateAccess};
 use seed::prelude::*;
 
 pub type SharedAccess<T> = (StateAccess<(StateAccess<T>, StateAccess<T>)>);
@@ -9,7 +9,6 @@ pub trait OtherState<T> {
     fn set_right_state(&self, value: T);
     fn set_left_state(&self, value: T);
 }
-
 impl<T> OtherState<T> for SharedAccess<T>
 where
     T: Send + Sync + 'static + Clone,
