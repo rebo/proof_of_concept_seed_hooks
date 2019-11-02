@@ -115,7 +115,7 @@ Current helpers include -  form state,  list management ,  memoization and two_w
 
 - Just sometimes I get put off adjusting my app because of the Msg:: chain chase all over the place to keep track of one simple thing. I wanted to see if I could somehow have some more isolated changes in one function (component) with stored state.
 
-- Per compoment data means for simple components I dont need to pollute the app with non-business logic.
+- Per component data means for simple components I dont need to pollute the app with non-business logic.
 
 - This should make it easier to create reusable chunks of logic that can be helpful in a different apps without having to wire in everything TEA style.
 
