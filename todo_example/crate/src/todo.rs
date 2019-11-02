@@ -1,7 +1,7 @@
 use super::Msg;
 use crate::generated::css_classes::C;
 use clone_all::clone_all;
-use comp_state::{use_state, StateAccess};
+use comp_state::use_state;
 use seed::dom_types::UpdateEl;
 use seed::{prelude::*, *};
 use seed_comp_helpers::list;
@@ -88,7 +88,7 @@ fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
                                 ],
                                 {
                                     clone_all!(list, list_control);
-                                    input_ev("click", move |_| {
+                                    mouse_ev("click", move |_| {
                                         let mut item = list.items[idx].clone();
                                         item.status = Status::Todo;
                                         list_control.replace(idx, item);
@@ -110,7 +110,7 @@ fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
                                 ],
                                 {
                                     clone_all!(list, list_control);
-                                    input_ev("click", move |_| {
+                                    mouse_ev("click", move |_| {
                                         let mut item = list.items[idx].clone();
                                         item.status = Status::Completed;
                                         list_control.replace(idx, item);
@@ -131,7 +131,7 @@ fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
                                     C.flex_none,
                                     C.mr_4
                                 ]],
-                                input_ev("click", move |_| {
+                                mouse_ev("click", move |_| {
                                     list_control.move_item_up(idx);
                                     list.list_updated_msg
                                 },)
@@ -150,7 +150,7 @@ fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
                                     C.flex_none,
                                     C.mr_4
                                 ]],
-                                input_ev("click", move |_| {
+                                mouse_ev("click", move |_| {
                                     list_control.move_item_down(idx);
                                     list.list_updated_msg
                                 },)
@@ -187,7 +187,7 @@ fn list_controls(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
                 C.mr_4
             ]],
             {
-                input_ev("click", move |_| {
+                mouse_ev("click", move |_| {
                     list_control.push(Item::new(item_state.adding));
                     item_state_access.set(ItemState::default());
                     Msg::DoNothing

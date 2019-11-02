@@ -1,10 +1,10 @@
 [package]
 version = "0.1.0"
-name = "kavik_cz"
-repository = "https://github.com/MartinKavik/kavik.cz"
-authors = ["Martin Kavík <martin@kavik.cz>"]
-description = "Personal website kavik.cz"
-categories = ["wasm", "rust", "tailwindcss", "seed", "personal", "website"]
+name = "todo_example"
+repository = "n/a"
+authors = ["rebo"]
+description = "todo example using component state"
+categories = ["wasm", "rust", "tailwindcss", "seed", "todo", "example"]
 license = "MIT"
 readme = "./README.md"
 edition = "2018"
@@ -17,8 +17,8 @@ wasm-bindgen-test = "^0.2.50" # sync with `wasm-bindgen`
 
 [dependencies]
 wasm-bindgen = "^0.2.50" # sync with `wasm-bindgen-test`
-seed = { path = "../../../seed_master" }
-# fixed-vec-deque = "0.1.8"
+seed = { path = "../../../seed_master" } # Uses a local seed master, however you probably want to use master from github instead
+#seed = { git = "https://github.com/David-OConnor/seed", branch="master" }
 topo = { path = "../../comp_state/moxie/topo" }
 comp_state = {path = "../../comp_state"}
 seed_comp_helpers = {path = "../../seed_comp_helpers"}
