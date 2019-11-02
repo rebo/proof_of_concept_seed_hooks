@@ -1,13 +1,14 @@
 use super::Msg;
 use crate::store::*;
 use seed::prelude::*;
-use std::collections::HashMap;
 use std::sync::Arc;
 // use wasm_bindgen::JsCast;
 // use wasm_bindgen_futures;
 // use wasm_bindgen_futures::JsFuture;
 // use web_sys::{Request, RequestInit, RequestMode, Response};
 
+mod list;
+use list::use_list;
 mod memo;
 
 mod form_state;
@@ -274,15 +275,60 @@ pub fn complex_form_test() -> Node<Msg> {
     ]
 }
 
+fn pretend_modal_view() -> Node<Msg> {
+    div!["THIS IS A PRETEND MODAL"]
+}
+
 fn send_view_to_back(
     portal_access: StateAccess<Arc<dyn Fn() -> Node<Msg> + Send + Sync>>,
 ) -> Node<Msg> {
     button![
         "render at end",
         input_ev("click", move |_| {
-            portal_access.set(Arc::new(|| span!["HERE!"]));
+            portal_access.set(Arc::new(pretend_modal_view));
             Msg::DoNothing
         })
+    ]
+}
+
+pub fn list_example() -> Node<Msg> {
+    // use_list produces a list_control that can control the list
+    // the Msg is the message to return with the list has been modified or updated
+    let list_control = use_list(
+        || {
+            vec![
+                "one".to_string(),
+                "two".to_string(),
+                "three".to_string(),
+                "four".to_string(),
+                "five".to_string(),
+            ]
+        },
+        Msg::DoNothing,
+    );
+    let (add_state, add_state_access) = use_state(|| "".to_string());
+    let list_control_clone = list_control.clone();
+    let add_state_access_clone = add_state_access.clone();
+    div![
+        list::basic_render(list_control),
+        div![
+            label!["Add:"],
+            input![
+                attrs!(At::Value => add_state),
+                input_ev("input", move |text| {
+                    add_state_access.set(text);
+                    Msg::DoNothing
+                })
+            ],
+            button![
+                "Add",
+                input_ev("click", move |_| {
+                    list_control_clone.push(add_state);
+                    add_state_access_clone.set("".to_string());
+                    Msg::DoNothing
+                })
+            ]
+        ]
     ]
 }
 
@@ -293,7 +339,11 @@ pub fn view() -> Node<Msg> {
     let (_, portal_access) = use_state(|| default_arced_closure);
 
     div![
-        div![send_view_to_back(portal_access.clone())],
+        div![h1!["Managed list Example"], list_example()],
+        div![
+            h1!["Sending Node<Msg> to another part of the view hierarchy Example"],
+            send_view_to_back(portal_access.clone())
+        ],
         div![
             h1!["Parent Child Example"],
             parent_and_child_components_example!()
@@ -320,8 +370,8 @@ pub fn view() -> Node<Msg> {
             hook_style_input!(),
         ],
         div![h1!["moved components to this 'portal'"]],
-        if let Some(arc) = portal_access.get() {
-            arc()
+        if let Some(portal_content) = portal_access.get() {
+            portal_content()
         } else {
             empty![]
         }

@@ -1,6 +1,7 @@
 use anymap::any::Any;
 use once_cell::sync::Lazy;
-use slotmap::{DefaultKey, Key, SecondaryMap, SlotMap};
+use serde::Serialize;
+use slotmap::{new_key_type, DefaultKey, Key, SecondaryMap, SlotMap};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -52,6 +53,10 @@ pub fn set_state_with_topo_id<T: Send + Sync + 'static + Clone>(data: T, current
         .lock()
         .unwrap()
         .set_state_with_topo_id::<T>(data, current_id);
+}
+
+pub fn set_state<T: Send + Sync + 'static + Clone>(data: T) {
+    STORE.lock().unwrap().set_state::<T>(data);
 }
 
 pub fn get_state_with_topo_id<T: Send + Sync + 'static + Clone>(current_id: topo::Id) -> Option<T> {

@@ -3,7 +3,7 @@ mod store;
 #[macro_use]
 extern crate seed;
 use seed::prelude::*;
-
+use serde::Serialize;
 mod hook_playground;
 
 // Model
@@ -18,7 +18,7 @@ impl Default for Model {
 }
 
 // Update
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub enum Msg {
     Increment,
     DoNothing,
