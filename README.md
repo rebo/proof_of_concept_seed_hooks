@@ -78,10 +78,10 @@ pub fn simple_form_test() -> Node<Msg> {
 
 This workspace is divided into 3 sub-projects.
 
-1.comp_state - A wrapper/plumbing for moxie/topo sets up a Global for contexts to store arbitraty data in. This provides the basic use_state() function that lets a topological aware execution context store and retreive state.  This is analogous to use_state in React. This crate does not depend on seed.
-2.seed_comp_helpers - Experimental helper functions for use within seed. Effectively these are custom hooks that build on functionality provided by use_state()
+1. comp_state - A wrapper/plumbing for moxie/topo sets up a Global for contexts to store arbitraty data in. This provides the basic use_state() function that lets a topological aware execution context store and retreive state.  This is analogous to use_state in React. This crate does not depend on seed.
+2. seed_comp_helpers - Experimental helper functions for use within seed. Effectively these are custom hooks that build on functionality provided by use_state()
 Current helpers include -  form state,  list management ,  memoization and two_way component communicaiton. All of these are proof of concept only and need to be fully developed to be any real use.
-3.example_seed_app - This is a full app that demonstrates the use of the seed helper and comp_state directly. Everything is loaded in one page, see hook_playground.
+3. example_seed_app - This is a full app that demonstrates the use of the seed helper and comp_state directly. Everything is loaded in one page, see hook_playground.
 
 **Caveats:**
 
