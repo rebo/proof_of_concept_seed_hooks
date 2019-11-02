@@ -28,6 +28,12 @@ where
         set_state_with_topo_id(value, self.id);
     }
 
+    pub fn update<F: FnOnce(&mut T) -> ()>(&self, func: F) {
+        let item = &mut self.get().unwrap();
+        func(item);
+        self.set(item.clone());
+    }
+
     pub fn get(&self) -> Option<T> {
         get_state_with_topo_id::<T>(self.id)
     }

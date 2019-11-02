@@ -3,5 +3,6 @@
 members = [
     "example_seed_app",
     "comp_state",
-    "seed_comp_helpers"
-]
+    "seed_comp_helpers",
+    "todo_example/crate"
+] 

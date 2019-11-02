@@ -9,5 +9,6 @@ edition = "2018"
 [dependencies]
 comp_state = {path = "../comp_state"}
 topo = { path = "../comp_state/moxie/topo" }
-seed = "^0.4.0"
+seed = { path = "../../seed_master" }
 fancy-regex = "0.2.0"
+clone_all = "0.1.1"

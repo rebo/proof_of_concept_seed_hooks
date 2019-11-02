@@ -288,7 +288,7 @@ fn send_view_to_back(
 pub fn list_example() -> Node<Msg> {
     // use_list produces a list_control that can control the list
     // the Msg is the message to return with the list has been modified or updated
-    let list_control = use_list(
+    let (_list, list_control) = use_list(
         || {
             vec![
                 "one".to_string(),

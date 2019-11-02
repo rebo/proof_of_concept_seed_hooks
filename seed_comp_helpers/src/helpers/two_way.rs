@@ -1,7 +1,7 @@
 use comp_state::{use_state, StateAccess};
 use seed::prelude::*;
 
-pub type SharedAccess<T> = (StateAccess<(StateAccess<T>, StateAccess<T>)>);
+pub type SharedAccess<T> = StateAccess<(StateAccess<T>, StateAccess<T>)>;
 
 pub trait OtherState<T> {
     fn get_right_state(&self) -> Option<T>;

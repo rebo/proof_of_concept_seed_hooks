@@ -1,3 +1,4 @@
+use clone_all::clone_all;
 use comp_state::{use_state, StateAccess};
 use seed::prelude::*;
 
@@ -17,24 +18,22 @@ where
             li![
                 span![item_s],
                 {
-                    let list_clone = list.clone();
-                    let list_ctl_clone = list_control.clone();
+                    clone_all!(list, list_control);
                     button![
                         "UP",
                         input_ev("click", move |_| {
-                            list_ctl_clone.move_item_up(idx);
-                            list_clone.list_updated_msg.clone()
+                            list_control.move_item_up(idx);
+                            list.list_updated_msg
                         },)
                     ]
                 },
                 {
-                    let list_clone = list.clone();
-                    let list_ctl_clone = list_control.clone();
+                    clone_all!(list, list_control);
                     button![
                         "DOWN",
                         input_ev("click", move |_| {
-                            list_ctl_clone.move_item_down(idx);
-                            list_clone.list_updated_msg.clone()
+                            list_control.move_item_down(idx);
+                            list.list_updated_msg
                         },)
                     ]
                 }
@@ -43,21 +42,24 @@ where
         .collect::<Vec<Node<Ms>>>()]]
 }
 
-pub fn use_list<F, T, Ms>(initial_list_fn: F, list_updated_msg: Ms) -> ListControl<T, Ms>
+pub fn use_list<F, T, Ms>(
+    initial_list_fn: F,
+    list_updated_msg: Ms,
+) -> (List<T, Ms>, ListControl<T, Ms>)
 where
     F: Fn() -> Vec<T>,
-    T: Into<String> + Send + Sync + 'static + Clone,
+    T: Send + Sync + 'static + Clone,
     Ms: Clone + Send + Sync + 'static,
 {
-    let (_, list_access) = use_state(|| List::new(initial_list_fn(), list_updated_msg));
+    let (list, list_access) = use_state(|| List::new(initial_list_fn(), list_updated_msg));
 
-    ListControl::new(list_access)
+    (list, ListControl::new(list_access))
 }
 
 #[derive(Clone)]
 pub struct ListControl<T, Ms>
 where
-    T: Into<String> + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     Ms: Clone + Send + Sync + 'static,
 {
     list_access: StateAccess<List<T, Ms>>,
@@ -65,11 +67,15 @@ where
 
 impl<T, Ms> ListControl<T, Ms>
 where
-    T: Into<String> + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     Ms: Clone + Send + Sync + 'static,
 {
     fn new(list_access: StateAccess<List<T, Ms>>) -> ListControl<T, Ms> {
         ListControl { list_access }
+    }
+
+    pub fn get_list(&self) -> List<T, Ms> {
+        self.list_access.get().unwrap()
     }
 
     // brain always gets this messed up so I have to write it down!
@@ -108,11 +114,11 @@ where
         }
 
         let old_item = list.items.remove(old_idx);
-        if old_idx > new_idx {
-            //no effect on new idx
-            list.items.insert(new_idx, old_item);
-        } else if old_idx < new_idx {
-            list.items.insert(new_idx - 1, old_item);
+        use std::cmp::Ordering;
+        match old_idx.cmp(&new_idx) {
+            Ordering::Less => list.items.insert(new_idx - 1, old_item),
+            Ordering::Greater => list.items.insert(new_idx, old_item),
+            Ordering::Equal => {}
         }
         self.list_access.set(list);
     }
@@ -157,18 +163,18 @@ where
 }
 
 #[derive(Clone, Debug)]
-struct List<T, Ms>
+pub struct List<T, Ms>
 where
-    T: Into<String> + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     Ms: Clone + Send + Sync + 'static,
 {
-    items: Vec<T>,
-    list_updated_msg: Ms,
+    pub items: Vec<T>,
+    pub list_updated_msg: Ms,
 }
 
 impl<T, Ms> List<T, Ms>
 where
-    T: Into<String> + Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + 'static,
     Ms: Clone + Send + Sync + 'static,
 {
     fn new(items: Vec<T>, list_updated_msg: Ms) -> List<T, Ms> {

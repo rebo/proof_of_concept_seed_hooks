@@ -284,13 +284,12 @@ where
     fn clear_errors_blur_event(&self, name: String) -> seed::events::Listener<Ms> {
         let (_form_state, form_state_access) = use_state(FormState::default);
         // let form_state_getter = state_getter::<FormState>();
-        let field_name = name.clone();
         input_ev("blur", move |_text| {
             if let Some(mut form_state) = form_state_access.get() {
                 if let Some(input) = form_state
                     .values
                     .iter_mut()
-                    .find(|input| input.name == field_name)
+                    .find(|input| input.name == name)
                 {
                     input.errors = vec![];
                 }
@@ -299,16 +298,14 @@ where
             Ms::default()
         })
     }
-
     fn clear_errors_input_event(&self, name: String) -> seed::events::Listener<Ms> {
         let (_form_state, form_state_access) = use_state(FormState::default);
-        let field_name = name.clone();
         input_ev("input", move |_text| {
             if let Some(mut form_state) = form_state_access.get() {
                 if let Some(input) = form_state
                     .values
                     .iter_mut()
-                    .find(|input| input.name == field_name)
+                    .find(|input| input.name == name)
                 {
                     input.errors = vec![];
                 }
@@ -319,14 +316,13 @@ where
     }
 
     fn update_value_input_event(&self, name: String) -> seed::events::Listener<Ms> {
-        let field_name = name.clone();
         let (_form_state, form_state_access) = use_state(FormState::default);
         input_ev("input", move |text| {
             if let Some(mut form_state) = form_state_access.get() {
                 if let Some(input) = form_state
                     .values
                     .iter_mut()
-                    .find(|input| input.name == field_name)
+                    .find(|input| input.name == name)
                 {
                     if input.value != text {
                         input.errors = vec![];
@@ -379,7 +375,6 @@ where
         let closures = self.validate_closures.clone();
 
         let (_form_state, form_state_access) = use_state(FormState::default);
-        let field_name = name.clone();
         if !closures.is_empty() {
             Some(input_ev(event_type, move |text| {
                 if let Some(mut form_state) = form_state_access.get() {
@@ -390,7 +385,7 @@ where
                             if let Some(input) = form_state
                                 .values
                                 .iter_mut()
-                                .find(|input| input.name == field_name)
+                                .find(|input| input.name == name)
                             {
                                 input.errors.push(error);
                             }
@@ -429,22 +424,13 @@ where
                         self.validation_closures_event(name.clone(), "blur")
                             .unwrap(),
                     );
-                    listeners.push(
-                        self.validation_closures_event(name.clone(), "input")
-                            .unwrap(),
-                    );
+                    listeners.push(self.validation_closures_event(name, "input").unwrap());
                 }
                 InputBlurBothEnum::Blur => {
-                    listeners.push(
-                        self.validation_closures_event(name.clone(), "blur")
-                            .unwrap(),
-                    );
+                    listeners.push(self.validation_closures_event(name, "blur").unwrap());
                 }
                 InputBlurBothEnum::Input => {
-                    listeners.push(
-                        self.validation_closures_event(name.clone(), "input")
-                            .unwrap(),
-                    );
+                    listeners.push(self.validation_closures_event(name, "input").unwrap());
                 }
             }
         }
