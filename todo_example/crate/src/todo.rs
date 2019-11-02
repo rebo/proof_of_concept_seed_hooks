@@ -34,22 +34,15 @@ struct ItemState {
     editing_idx: Option<usize>,
 }
 
-pub fn masterview() -> Node<Msg> {
-    let (_list, list_control) = list::use_list(
-        || {
-            vec![
-                Item::new("Do the washing up"),
-                Item::new("Walk the dog"),
-                Item::new("Pay Bills"),
-                Item::new("Do the shopping"),
-            ]
-        },
-        Msg::DoNothing,
-    );
-    div![
-        render_list(list_control.clone()),
-        list_controls(list_control),
-    ]
+pub fn masterview(tasks: &[&str]) -> Node<Msg> {
+    let tasks = tasks.iter().cloned().map(Item::new).collect::<Vec<Item>>();
+    topo::call!({
+        let (_list, list_control) = list::use_list(|| tasks, Msg::DoNothing);
+        div![
+            render_list(list_control.clone()),
+            list_controls(list_control),
+        ]
+    })
 }
 
 fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
@@ -61,7 +54,7 @@ fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
             C.border_solid,
             C.border_gray_4,
             C.m_4,
-            C.shadow_lg
+            C.rounded,
         ],
         list.items
             .iter()
@@ -75,31 +68,30 @@ fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
                         C.border_solid,
                         C.border_gray_4,
                         C.m_4,
-                        C.shadow_lg
+                        C.shadow,
+                        C.flex,
+                        C.flex_row,
                     ],
                     if item.status == Status::Completed {
                         span![
-                            i![
-                                class![
-                                    "far fa-check-circle",
-                                    C.cursor_pointer,
-                                    C.flex_none,
-                                    C.mr_4
-                                ],
-                                {
-                                    clone_all!(list, list_control);
-                                    mouse_ev("click", move |_| {
-                                        let mut item = list.items[idx].clone();
-                                        item.status = Status::Todo;
-                                        list_control.replace(idx, item);
-                                        list.list_updated_msg
-                                    })
-                                },
+                            class![C.flex_1],
+                            i![class!["far fa-check-circle", C.cursor_pointer, C.mr_4], {
+                                clone_all!(list, list_control);
+                                mouse_ev("click", move |_| {
+                                    let mut item = list.items[idx].clone();
+                                    item.status = Status::Todo;
+                                    list_control.replace(idx, item);
+                                    list.list_updated_msg
+                                })
+                            },],
+                            del![
+                                class![C.mr_2],
+                                format!("{} ) {}", idx + 1, item.description)
                             ],
-                            del![format!("{} ) {}", idx + 1, item.description)],
                         ]
                     } else {
                         span![
+                            class![C.flex_1],
                             i![
                                 class![
                                     "far fa-check-circle",
@@ -118,19 +110,17 @@ fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
                                     })
                                 },
                             ],
-                            format!("{} ) {}", idx + 1, item.description)
+                            span![
+                                class![C.flex_1, C.mr_2],
+                                format!("{} ) {}", idx + 1, item.description)
+                            ]
                         ]
                     },
                     {
                         clone_all!(list, list_control);
                         if idx > 0 {
-                            button![
-                                i![class![
-                                    "fas fa-arrow-up",
-                                    C.cursor_pointer,
-                                    C.flex_none,
-                                    C.mr_4
-                                ]],
+                            i![
+                                class!["fas fa-arrow-up", C.cursor_pointer, C.flex_none, C.mr_4],
                                 mouse_ev("click", move |_| {
                                     list_control.move_item_up(idx);
                                     list.list_updated_msg
@@ -143,13 +133,8 @@ fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
                     {
                         clone_all!(list, list_control);
                         if idx != list.items.len() - 1 {
-                            button![
-                                i![class![
-                                    "fas fa-arrow-down",
-                                    C.cursor_pointer,
-                                    C.flex_none,
-                                    C.mr_4
-                                ]],
+                            i![
+                                class!["fas fa-arrow-down", C.cursor_pointer, C.flex_none, C.mr_4],
                                 mouse_ev("click", move |_| {
                                     list_control.move_item_down(idx);
                                     list.list_updated_msg

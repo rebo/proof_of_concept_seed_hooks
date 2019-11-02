@@ -63,7 +63,25 @@ pub fn update(msg: Msg, _model: &mut Model, _orders: &mut impl Orders<Msg>) {
 //   - https://codepoints.net/U+FE0E
 
 pub fn view(_model: &Model) -> impl View<Msg> {
-    topo::root!(todo::masterview())
+    // One advantage of state stored in components is that
+    // One can simply repeatedly 'render' the view
+    // and each view will have its own state that just "works"
+    topo::root!(div![
+        h1!["Household Chores"],
+        todo::masterview(&[
+            "Feed the cat",
+            "Do the Washing",
+            "Mow the lawn",
+            "Buy Flowers"
+        ]),
+        h1!["Business Tasks"],
+        todo::masterview(&[
+            "Complete purchase order",
+            "File paperwork",
+            "Issue Invoices",
+            "Write report"
+        ]),
+    ])
 }
 
 pub fn image_src(image: &str) -> String {

@@ -47,7 +47,7 @@ pub fn use_list<F, T, Ms>(
     list_updated_msg: Ms,
 ) -> (List<T, Ms>, ListControl<T, Ms>)
 where
-    F: Fn() -> Vec<T>,
+    F: FnOnce() -> Vec<T>,
     T: Send + Sync + 'static + Clone,
     Ms: Clone + Send + Sync + 'static,
 {
