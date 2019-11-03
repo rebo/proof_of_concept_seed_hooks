@@ -1,7 +1,7 @@
 use super::Msg;
 use crate::generated::css_classes::C;
-use clone_all::clone_all;
-use comp_state::use_state;
+use comp_state::{set_state, use_state};
+use list::ListControl;
 use seed::dom_types::UpdateEl;
 use seed::{prelude::*, *};
 use seed_comp_helpers::list;
@@ -36,16 +36,19 @@ struct ItemState {
 
 pub fn masterview(tasks: &[&str]) -> Node<Msg> {
     let tasks = tasks.iter().cloned().map(Item::new).collect::<Vec<Item>>();
+
+    // gives the block inside its only execution context.
     topo::call!({
+        // list control lets you interact with items in the list
         let (_list, list_control) = list::use_list(|| tasks, Msg::DoNothing);
-        div![
-            render_list(list_control.clone()),
-            list_controls(list_control),
-        ]
+        // within this component allow only global access to the list control
+        set_state(list_control);
+        div![render_list(), list_controls(),]
     })
 }
 
-fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
+fn render_list() -> Node<Msg> {
+    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
     let list = list_control.get_list();
     div![ul![
         class![
@@ -73,84 +76,100 @@ fn render_list(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
                         C.flex_row,
                     ],
                     if item.status == Status::Completed {
-                        span![
-                            class![C.flex_1],
-                            i![class!["far fa-check-circle", C.cursor_pointer, C.mr_4], {
-                                clone_all!(list, list_control);
-                                mouse_ev("click", move |_| {
-                                    let mut item = list.items[idx].clone();
-                                    item.status = Status::Todo;
-                                    list_control.replace(idx, item);
-                                    list.list_updated_msg
-                                })
-                            },],
-                            del![
-                                class![C.mr_2],
-                                format!("{} ) {}", idx + 1, item.description)
-                            ],
-                        ]
+                        completed_item_view(idx, item)
                     } else {
-                        span![
-                            class![C.flex_1],
-                            i![
-                                class![
-                                    "far fa-check-circle",
-                                    C.cursor_pointer,
-                                    C.flex_none,
-                                    C.text_gray_3,
-                                    C.mr_4
-                                ],
-                                {
-                                    clone_all!(list, list_control);
-                                    mouse_ev("click", move |_| {
-                                        let mut item = list.items[idx].clone();
-                                        item.status = Status::Completed;
-                                        list_control.replace(idx, item);
-                                        list.list_updated_msg
-                                    })
-                                },
-                            ],
-                            span![
-                                class![C.flex_1, C.mr_2],
-                                format!("{} ) {}", idx + 1, item.description)
-                            ]
-                        ]
+                        item_view(idx, item)
                     },
-                    {
-                        clone_all!(list, list_control);
-                        if idx > 0 {
-                            i![
-                                class!["fas fa-arrow-up", C.cursor_pointer, C.flex_none, C.mr_4],
-                                mouse_ev("click", move |_| {
-                                    list_control.move_item_up(idx);
-                                    list.list_updated_msg
-                                },)
-                            ]
-                        } else {
-                            empty![]
-                        }
-                    },
-                    {
-                        clone_all!(list, list_control);
-                        if idx != list.items.len() - 1 {
-                            i![
-                                class!["fas fa-arrow-down", C.cursor_pointer, C.flex_none, C.mr_4],
-                                mouse_ev("click", move |_| {
-                                    list_control.move_item_down(idx);
-                                    list.list_updated_msg
-                                },)
-                            ]
-                        } else {
-                            empty![]
-                        }
-                    },
+                    move_up_button(idx),
+                    move_down_button(idx),
                 ]
             })
             .collect::<Vec<Node<Msg>>>()
     ]]
 }
 
-fn list_controls(list_control: list::ListControl<Item, Msg>) -> Node<Msg> {
+fn move_up_button(idx: usize) -> Node<Msg> {
+    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list = list_control.get_list();
+    if idx != 0 {
+        i![
+            class!["fas fa-arrow-up", C.cursor_pointer, C.flex_none, C.mr_4],
+            mouse_ev("click", move |_| {
+                list_control.move_item_up(idx);
+                list.list_updated_msg
+            },)
+        ]
+    } else {
+        i![class!["fas fa-stop", C.cursor_pointer, C.flex_none, C.mr_4],]
+    }
+}
+
+fn move_down_button(idx: usize) -> Node<Msg> {
+    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list = list_control.get_list();
+    if idx != list.items.len() - 1 {
+        i![
+            class!["fas fa-arrow-down", C.cursor_pointer, C.flex_none, C.mr_4],
+            mouse_ev("click", move |_| {
+                list_control.move_item_down(idx);
+                list.list_updated_msg
+            },)
+        ]
+    } else {
+        i![class!["fas fa-stop", C.cursor_pointer, C.flex_none, C.mr_4],]
+    }
+}
+
+fn completed_item_view(idx: usize, item: &Item) -> Node<Msg> {
+    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list = list_control.get_list();
+    span![
+        class![C.flex_1],
+        i![class!["far fa-check-circle", C.cursor_pointer, C.mr_4], {
+            mouse_ev("click", move |_| {
+                let mut item = list.items[idx].clone();
+                item.status = Status::Todo;
+                list_control.replace(idx, item);
+                list.list_updated_msg
+            })
+        },],
+        del![
+            class![C.mr_2],
+            format!("{} ) {}", idx + 1, item.description)
+        ],
+    ]
+}
+fn item_view(idx: usize, item: &Item) -> Node<Msg> {
+    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list = list_control.get_list();
+    span![
+        class![C.flex_1],
+        i![
+            class![
+                "far fa-check-circle",
+                C.cursor_pointer,
+                C.flex_none,
+                C.text_gray_3,
+                C.mr_4
+            ],
+            {
+                mouse_ev("click", move |_| {
+                    let mut item = list.items[idx].clone();
+                    item.status = Status::Completed;
+                    list_control.replace(idx, item);
+                    list.list_updated_msg
+                })
+            },
+        ],
+        span![
+            class![C.flex_1, C.mr_2],
+            format!("{} ) {}", idx + 1, item.description)
+        ]
+    ]
+}
+
+fn list_controls() -> Node<Msg> {
+    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
     let (item_state, item_state_access) = use_state(ItemState::default);
     div![
         label!["Add Task"],

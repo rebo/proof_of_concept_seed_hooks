@@ -52,6 +52,14 @@ pub fn clone_state<T: Send + Sync + 'static + Clone>() -> Option<T> {
     STORE.lock().unwrap().get_state::<T>().cloned()
 }
 
+pub fn set_state<T: Send + Sync + 'static + Clone>(data: T) {
+    let current_id = topo::Id::current();
+    STORE
+        .lock()
+        .unwrap()
+        .set_state_with_topo_id::<T>(data, current_id);
+}
+
 pub fn set_state_with_topo_id<T: Send + Sync + 'static + Clone>(data: T, current_id: topo::Id) {
     STORE
         .lock()
@@ -168,11 +176,6 @@ impl Store {
         self.anymap.insert(sm);
     }
 }
-
-// pub fn set_state<T: Send + Sync + 'static>(&mut self, data: T) {
-//     let current_id = topo::Id::current();
-//     self.set_state_with_topo_id::<T>(data, current_id);
-// }
 
 pub fn state_getter<T: Send + Sync + 'static + Clone>() -> Arc<dyn Fn() -> Option<T>> {
     let current_id = topo::Id::current();
