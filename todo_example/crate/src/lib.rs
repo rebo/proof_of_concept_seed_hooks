@@ -81,6 +81,13 @@ pub fn view(_model: &Model) -> impl View<Msg> {
             "Issue Invoices",
             "Write report"
         ]),
+        h1!["TV Shows to Watch"],
+        todo::masterview(&[
+            "Watch DARK",
+            "Watch The Expanse",
+            "Watch Patriot",
+            "Watch Mr Robot"
+        ]),
     ])
 }
 
