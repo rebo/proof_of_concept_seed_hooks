@@ -43,7 +43,20 @@ pub fn masterview(tasks: &[&str]) -> Node<Msg> {
         let (_list, list_control) = list::use_list(|| tasks, Msg::DoNothing);
         // within this component allow only global access to the list control
         set_state(list_control);
-        div![render_list(), list_controls(),]
+        div![
+            render_list(),
+            list_controls(),
+            // below is random testing stuff ignore
+            // testing for small componets with state
+            {
+                let on_off = on_off_toggle();
+                if on_off.0 {
+                    div!["This does nothing but it is on:", on_off.1]
+                } else {
+                    div!["This does nothing but it is off:", on_off.1]
+                }
+            }
+        ]
     })
 }
 
@@ -199,4 +212,21 @@ fn list_controls() -> Node<Msg> {
             }
         ]
     ]
+}
+
+fn on_off_toggle() -> (bool, Node<Msg>) {
+    topo::call!({
+        let (state, state_access) = use_state(|| false);
+        (
+            state,
+            div![
+                class![C.w_2, C.cursor_pointer],
+                if state { div!["ON"] } else { div!["OFF"] },
+                mouse_ev(Ev::Click, move |_| {
+                    state_access.set(!state_access.get().unwrap());
+                    Msg::DoNothing
+                })
+            ],
+        )
+    })
 }
