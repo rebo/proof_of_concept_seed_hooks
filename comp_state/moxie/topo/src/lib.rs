@@ -298,7 +298,7 @@ macro_rules! unstable_raw_call {
 /// unstable iteration order.
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
-pub struct Id(u64);
+pub struct Id(pub u64);
 
 impl Id {
     /// Returns the `Id` for the current scope in the call topology.

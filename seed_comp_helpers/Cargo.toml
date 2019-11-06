@@ -11,4 +11,7 @@ comp_state = {path = "../comp_state"}
 topo = { path = "../comp_state/moxie/topo" }
 seed = { path = "../../seed_master" }
 fancy-regex = "0.2.0"
+serde = "1.0.102"
 clone_all = "0.1.1"
+futures = "^0.1.27"
+serde_json = "1.0.40"
