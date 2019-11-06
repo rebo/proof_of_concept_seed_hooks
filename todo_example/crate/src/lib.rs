@@ -54,6 +54,12 @@ pub enum Msg {
     Fetched(topo::Id, String),
 }
 
+impl Default for Msg {
+    fn default() -> Self {
+        Msg::DoNothing
+    }
+}
+
 // Needed for use_fetch hook to work. links enum method interface to specific variants.
 impl UseFetchMsgTrait for Msg {
     fn fetch_message(id: topo::Id, url: String, method: Method) -> Self {

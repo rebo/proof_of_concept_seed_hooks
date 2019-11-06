@@ -92,7 +92,6 @@ pub fn update_state_with_topo_id<T: Clone + 'static, F: FnOnce(&mut T) -> ()>(
 
 pub fn use_state<T: 'static + Clone, F: FnOnce() -> T>(data_fn: F) -> (T, StateAccess<T>) {
     let current_id = topo::Id::current();
-    // log!(current_id);
     if let Some(stored_data) = clone_state::<T>() {
         (stored_data, StateAccess::new(current_id))
     } else {

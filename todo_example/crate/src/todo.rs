@@ -5,6 +5,7 @@ use comp_state::{set_state, use_state};
 use list::ListControl;
 use seed::dom_types::UpdateEl;
 use seed::{prelude::*, *};
+use seed_comp_helpers::do_once;
 use seed_comp_helpers::list;
 use seed_comp_helpers::use_fetch_helper::use_fetch;
 use seed_comp_helpers::use_fetch_helper::{UseFetchStatus, UseFetchStatusTrait};
@@ -202,6 +203,7 @@ fn list_controls() -> Node<Msg> {
                 })
             }
         ],
+        fetch_todo_with_seed_msg_hooks(),
         fetch_todo(),
     ]
 }
@@ -233,15 +235,13 @@ fn fetch_todo() -> Node<Msg> {
             UseFetchStatus::Initialized => "Initialized (Ready to Dispatch)".to_string(),
             UseFetchStatus::Loading => "Loading...".to_string(),
             UseFetchStatus::Complete => {
-                let (has_done_once, once_access) = use_state(|| false);
-                if !has_done_once {
+                do_once(|| {
                     list_control.push(Item {
                         status: Status::Todo,
                         description: format!("{:#?}", fetched.clone().unwrap()),
                     });
                     seed_comp_helpers::schedule_update::<_, Model>(Msg::DoNothing);
-                    once_access.set(true);
-                }
+                });
                 format!("Downloaded Task: {}", fetched.unwrap().title)
             }
             UseFetchStatus::Failed => "Failed!".to_string(),
@@ -249,19 +249,62 @@ fn fetch_todo() -> Node<Msg> {
     ]
 }
 
-// fn on_off_toggle() -> (bool, Node<Msg>) {
-//     topo::call!({
-//         let (state, state_access) = use_state(|| false);
-//         (
-//             state,
-//             div![
-//                 class![C.w_2, C.cursor_pointer],
-//                 if state { div!["ON"] } else { div!["OFF"] },
-//                 mouse_ev(Ev::Click, move |_| {
-//                     state_access.set(!state_access.get().unwrap());
-//                     Msg::DoNothing
-//                 })
-//             ],
-//         )
-//     })
-// }
+fn fetch_todo_with_seed_msg_hooks() -> Node<Msg> {
+    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let (fetched, fetch_control) = use_fetch::<Todo>(
+        "https://jsonplaceholder.typicode.com/todos/1".to_string(),
+        Method::Get,
+    );
+
+    let (fetched2, fetch_control2) = use_fetch::<Todo>(
+        "https://jsonplaceholder.typicode.com/todos/2".to_string(),
+        Method::Get,
+    );
+
+    div![
+        button![class![C.p_4, C.bg_gray_5, C.m_4], "Dispatch Json", {
+            let fetch_control = fetch_control.clone();
+            mouse_ev(Ev::Click, move |_ev| {
+                fetch_control.dispatch_with_seed::<Msg, Model>();
+                Msg::DoNothing
+            })
+        }],
+        button![class![C.p_4, C.bg_gray_5, C.m_4], "Dispatch Json", {
+            let fetch_control2 = fetch_control2.clone();
+            mouse_ev(Ev::Click, move |_ev| {
+                fetch_control2.dispatch_with_seed::<Msg, Model>();
+                Msg::DoNothing
+            })
+        }],
+        match fetch_control.status() {
+            UseFetchStatus::Initialized => "Initialized (Ready to Dispatch)".to_string(),
+            UseFetchStatus::Loading => "Loading...".to_string(),
+            UseFetchStatus::Complete => {
+                do_once(|| {
+                    list_control.push(Item {
+                        status: Status::Todo,
+                        description: format!("{:#?}", fetched.clone().unwrap()),
+                    });
+                    seed_comp_helpers::schedule_update::<_, Model>(Msg::DoNothing);
+                });
+                format!("Downloaded Task: {}", fetched.unwrap().title)
+            }
+            UseFetchStatus::Failed => "Failed!".to_string(),
+        },
+        match fetch_control2.status() {
+            UseFetchStatus::Initialized => "Initialized (Ready to Dispatch)".to_string(),
+            UseFetchStatus::Loading => "Loading...".to_string(),
+            UseFetchStatus::Complete => {
+                do_once(|| {
+                    list_control.push(Item {
+                        status: Status::Todo,
+                        description: format!("{:#?}", fetched2.clone().unwrap()),
+                    });
+                    seed_comp_helpers::schedule_update::<_, Model>(Msg::DoNothing);
+                });
+                format!("Downloaded Task: {}", fetched2.unwrap().title)
+            }
+            UseFetchStatus::Failed => "Failed!".to_string(),
+        }
+    ]
+}
