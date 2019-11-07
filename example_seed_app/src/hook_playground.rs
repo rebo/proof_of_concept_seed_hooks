@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use seed_comp_helpers::form_state::{use_form_state, use_form_state_builder, UpdateElLocal};
 use seed_comp_helpers::list::{basic_render, use_list};
-use seed_comp_helpers::memo::use_memoize;
+use seed_comp_helpers::memo::use_memo;
 use seed_comp_helpers::two_way::*;
 
 #[topo::nested]
@@ -20,7 +20,7 @@ fn memoize_example() -> Node<Msg> {
     // this is useful for expensive calls that you only want to be recalculated on demand
     // it would be good to memoize entire Note<Msg> trees howeever trait constraints does
     // allow for this
-    let (date_time, recalc_trigger) = use_memoize(|| {
+    let (date_time, memo_ctl) = use_memo(false, || {
         let date = js_sys::Date::new_0();
         format!(
             "Day: {}, Month: {}, Year:{}, Hours: {}, Minutes: {}, seconds: {}, milliseconds: {}",
@@ -36,10 +36,10 @@ fn memoize_example() -> Node<Msg> {
 
     // Normally one issue is that only one value of one type can be memoized per
     // execution context.
-    // However inside use_memoize is run inside its own call context
+    // However inside use_memo is run inside its own call context
     // therefore everything should be ok
 
-    let (other_string, other_recalc_trigger) = use_memoize(|| {
+    let (other_string, other_memo_ctl) = use_memo(false, || {
         let date = js_sys::Date::new_0();
         format!("milliseconds only: {}", date.get_milliseconds())
     });
@@ -50,8 +50,8 @@ fn memoize_example() -> Node<Msg> {
         div![button![
             "Recalculate expensive js-sys closure",
             input_ev("click", move |_event| {
-                recalc_trigger(true);
-                other_recalc_trigger(true);
+                memo_ctl.recalc(true);
+                other_memo_ctl.recalc(true);
                 Msg::DoNothing
             })
         ]]

@@ -7,11 +7,12 @@ use seed::dom_types::UpdateEl;
 use seed::{prelude::*, *};
 use seed_comp_helpers::do_once;
 use seed_comp_helpers::list;
+use seed_comp_helpers::memo::{use_memo, watch};
 use seed_comp_helpers::use_fetch_helper::use_fetch;
 use seed_comp_helpers::use_fetch_helper::{UseFetchStatus, UseFetchStatusTrait};
 
 use serde::Deserialize;
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 struct Item {
     description: String,
     status: Status,
@@ -26,7 +27,7 @@ impl Item {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 enum Status {
     Todo,
     Completed,
@@ -125,24 +126,36 @@ fn move_down_button(idx: usize) -> Node<Msg> {
     }
 }
 
+// this function shows an example of using memoization on Node<Msgs>
 fn completed_item_view(idx: usize, item: &Item) -> Node<Msg> {
     let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
-    let list = list_control.get_list();
-    span![
-        class![C.flex_1],
-        i![class!["far fa-check-circle", C.cursor_pointer, C.mr_4], {
-            mouse_ev("click", move |_| {
-                let mut item = list.items[idx].clone();
-                item.status = Status::Todo;
-                list_control.replace(idx, item);
-                list.list_updated_msg
-            })
-        },],
-        del![
-            class![C.mr_2],
-            format!("{} ) {}", idx + 1, item.description)
-        ],
-    ]
+    let (item, idx) = (watch(item), watch(&idx));
+    let (nodes, _memo_ctl) = use_memo(item.changed || idx.changed, || {
+        // If using use_memo you need to ensure anything that can change is updated via a function
+        // and not just used in the closure becuase it gets captured on first run.
+        let list = list_control.get_list();
+        let (item, idx) = (item.hard_get(), idx.hard_get());
+        //
+        //
+
+        span![
+            class![C.flex_1],
+            i![class!["far fa-check-circle", C.cursor_pointer, C.mr_4], {
+                let list_control = list_control.clone();
+                mouse_ev("click", move |_| {
+                    let mut item = list.items[idx].clone();
+                    item.status = Status::Todo;
+                    list_control.replace(idx, item);
+                    list.list_updated_msg
+                })
+            },],
+            del![
+                class![C.mr_2],
+                format!("{} ) {}", idx + 1, item.description)
+            ],
+        ]
+    });
+    nodes
 }
 fn item_view(idx: usize, item: &Item) -> Node<Msg> {
     let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();

@@ -37,6 +37,10 @@ where
     pub fn get(&self) -> Option<T> {
         get_state_with_topo_id::<T>(self.id)
     }
+
+    pub fn hard_get(&self) -> T {
+        get_state_with_topo_id::<T>(self.id).unwrap()
+    }
 }
 
 #[derive(Default, Debug)]
