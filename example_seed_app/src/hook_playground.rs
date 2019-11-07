@@ -308,11 +308,10 @@ pub fn list_example() -> Node<Msg> {
             .cloned()
             .enumerate()
             .map(|(idx, item)| {
-                let item_s: String = item.into();
                 li![
-                    span![item_s],
+                    span![item],
                     {
-                        clone_all!(list, list_control);
+                        clone_all!(list_control);
                         button![
                             "UP",
                             input_ev("click", move |_| {
@@ -322,7 +321,7 @@ pub fn list_example() -> Node<Msg> {
                         ]
                     },
                     {
-                        clone_all!(list, list_control);
+                        clone_all!(list_control);
                         button![
                             "DOWN",
                             input_ev("click", move |_| {
