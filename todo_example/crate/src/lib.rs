@@ -141,7 +141,9 @@ pub fn run() {
     if topo::Env::get::<RefCell<Store>>().is_none() {
         topo::Env::add(RefCell::new(Store::default()));
     }
-    App::build(init, update, view).routes(routes).finish().run();
+    App::build(init, update, view)
+        .routes(routes)
+        .build_and_start();
 
     log!("App started.");
 }

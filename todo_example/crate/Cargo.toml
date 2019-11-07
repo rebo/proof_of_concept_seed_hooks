@@ -18,7 +18,8 @@ wasm-bindgen-test = "^0.2.50" # sync with `wasm-bindgen`
 [dependencies]
 
 wasm-bindgen = "^0.2.50" # sync with `wasm-bindgen-test`
-seed = { path = "../../../seed_master" } # Uses a local seed master, however you probably want to use master from github instead
+seed = "0.4.2"
+# seed = { path = "../../../seed_master" } # Uses a local seed master, however you probably want to use master from github instead
 #seed = { git = "https://github.com/David-OConnor/seed", branch="master" }
 topo = { path = "../../comp_state/moxie/topo" }
 comp_state = {path = "../../comp_state"}

@@ -9,7 +9,8 @@ edition = "2018"
 [dependencies]
 comp_state = {path = "../comp_state"}
 topo = { path = "../comp_state/moxie/topo" }
-seed = { path = "../../seed_master" }
+# seed = { path = "../../seed_master" }
+seed = "0.4.2"
 fancy-regex = "0.2.0"
 wasm-bindgen-futures = "0.3.22"
 wasm-bindgen = "^0.2.50" 
