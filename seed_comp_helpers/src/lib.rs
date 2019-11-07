@@ -4,8 +4,6 @@ pub mod helpers;
 
 use comp_state::{use_state, Store};
 pub use helpers::form_state;
-pub use helpers::list;
-pub use helpers::memo;
 pub use helpers::two_way;
 pub use helpers::use_fetch_helper;
 use seed::prelude::*;

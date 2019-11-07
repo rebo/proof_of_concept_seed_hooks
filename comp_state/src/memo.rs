@@ -1,17 +1,4 @@
-// use crate::store::*;
-// use anymap::any::Any;
-// // use seed::prelude::*;
-// use std::rc::Rc;
-
-// pub fn memoize_value<T: Sync + Send + 'static + Clone>(value: T) -> T {
-//     let mut map = anymap::Map::new();
-//     map.insert::<T>(value);
-//     let arc_anymap: Arc<anymap::Map<dyn Any + Sync + Send>> = Arc::new(map);
-//     let (value, set_value) = use_state(arc_anymap);
-//     value.get::<T>().cloned().unwrap()
-// }
-
-use comp_state::*;
+use crate::{use_state, StateAccess};
 
 #[derive(Clone)]
 pub struct MemoControl(StateAccess<bool>);
@@ -42,8 +29,7 @@ where
     }
 }
 
-use std::fmt::Debug;
-pub fn watch<T: 'static + Clone + Debug + PartialEq>(current_watched: &T) -> Watch<T> {
+pub fn watch<T: 'static + Clone + PartialEq>(current_watched: &T) -> Watch<T> {
     topo::call!({
         let current_watched_clone = current_watched.clone();
         let (watched, watch_access) = use_state(|| current_watched.clone());

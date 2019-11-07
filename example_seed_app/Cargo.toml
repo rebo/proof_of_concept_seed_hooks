@@ -22,6 +22,7 @@ seed_comp_helpers = {path = "../seed_comp_helpers"}
 fancy-regex = "0.2.0"
 wasm-bindgen-futures = "0.4.2"
 js-sys = "0.3.29" 
+clone_all = "0.1.1"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2.45" # NOTE: keep in sync with wasm-bindgen version

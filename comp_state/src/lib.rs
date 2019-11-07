@@ -1,5 +1,9 @@
+mod list;
+mod memo;
 mod store;
 
+pub use list::{use_list, ListControl};
+pub use memo::{use_memo, watch};
 pub use store::state_getter;
 pub use store::StateAccess;
 pub use store::Store;

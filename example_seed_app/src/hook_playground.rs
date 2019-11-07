@@ -1,4 +1,5 @@
 use super::Msg;
+use clone_all::clone_all;
 use comp_state::{use_state, StateAccess};
 use seed::prelude::*;
 use std::sync::Arc;
@@ -7,9 +8,8 @@ use std::sync::Arc;
 // use wasm_bindgen_futures::JsFuture;
 // use web_sys::{Request, RequestInit, RequestMode, Response};
 
+use comp_state::{use_list, use_memo};
 use seed_comp_helpers::form_state::{use_form_state, use_form_state_builder, UpdateElLocal};
-use seed_comp_helpers::list::{basic_render, use_list};
-use seed_comp_helpers::memo::use_memo;
 use seed_comp_helpers::two_way::*;
 
 #[topo::nested]
@@ -288,23 +288,52 @@ fn send_view_to_back(
 pub fn list_example() -> Node<Msg> {
     // use_list produces a list_control that can control the list
     // the Msg is the message to return with the list has been modified or updated
-    let (_list, list_control) = use_list(
-        || {
-            vec![
-                "one".to_string(),
-                "two".to_string(),
-                "three".to_string(),
-                "four".to_string(),
-                "five".to_string(),
-            ]
-        },
-        Msg::DoNothing,
-    );
+    let (list, list_control) = use_list(|| {
+        vec![
+            "one".to_string(),
+            "two".to_string(),
+            "three".to_string(),
+            "four".to_string(),
+            "five".to_string(),
+        ]
+    });
+
     let (add_state, add_state_access) = use_state(|| "".to_string());
     let list_control_clone = list_control.clone();
     let add_state_access_clone = add_state_access.clone();
     div![
-        basic_render(list_control),
+        div![div![ul![list
+            .items
+            .iter()
+            .cloned()
+            .enumerate()
+            .map(|(idx, item)| {
+                let item_s: String = item.into();
+                li![
+                    span![item_s],
+                    {
+                        clone_all!(list, list_control);
+                        button![
+                            "UP",
+                            input_ev("click", move |_| {
+                                list_control.move_item_up(idx);
+                                Msg::DoNothing
+                            },)
+                        ]
+                    },
+                    {
+                        clone_all!(list, list_control);
+                        button![
+                            "DOWN",
+                            input_ev("click", move |_| {
+                                list_control.move_item_down(idx);
+                                Msg::DoNothing
+                            },)
+                        ]
+                    }
+                ]
+            })
+            .collect::<Vec<Node<Msg>>>()]],],
         div![
             label!["Add:"],
             input![

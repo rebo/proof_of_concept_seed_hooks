@@ -2,12 +2,11 @@
 use super::{Model, Msg};
 use crate::generated::css_classes::C;
 use comp_state::{set_state, use_state};
-use list::ListControl;
+use comp_state::{use_list, ListControl};
+use comp_state::{use_memo, watch};
 use seed::dom_types::UpdateEl;
 use seed::{prelude::*, *};
 use seed_comp_helpers::do_once;
-use seed_comp_helpers::list;
-use seed_comp_helpers::memo::{use_memo, watch};
 use seed_comp_helpers::use_fetch_helper::use_fetch;
 use seed_comp_helpers::use_fetch_helper::{UseFetchStatus, UseFetchStatusTrait};
 
@@ -46,7 +45,7 @@ pub fn masterview(tasks: &[&str]) -> Node<Msg> {
     // gives the block inside its only execution context.
     topo::call!({
         // list control lets you interact with items in the list
-        let (_list, list_control) = list::use_list(|| tasks, Msg::DoNothing);
+        let (_list, list_control) = use_list(|| tasks);
         // within this component allow only global access to the list control
         set_state(list_control);
         div![render_list(), list_controls(),]
@@ -54,7 +53,7 @@ pub fn masterview(tasks: &[&str]) -> Node<Msg> {
 }
 
 fn render_list() -> Node<Msg> {
-    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list_control = comp_state::clone_state::<ListControl<Item>>().unwrap();
     let list = list_control.get_list();
     div![ul![
         class![
@@ -95,14 +94,14 @@ fn render_list() -> Node<Msg> {
 }
 
 fn move_up_button(idx: usize) -> Node<Msg> {
-    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
-    let list = list_control.get_list();
+    let list_control = comp_state::clone_state::<ListControl<Item>>().unwrap();
+    // let list = list_control.get_list();
     if idx != 0 {
         i![
             class!["fas fa-arrow-up", C.cursor_pointer, C.flex_none, C.mr_4],
             mouse_ev("click", move |_| {
                 list_control.move_item_up(idx);
-                list.list_updated_msg
+                Msg::DoNothing
             },)
         ]
     } else {
@@ -111,14 +110,14 @@ fn move_up_button(idx: usize) -> Node<Msg> {
 }
 
 fn move_down_button(idx: usize) -> Node<Msg> {
-    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list_control = comp_state::clone_state::<ListControl<Item>>().unwrap();
     let list = list_control.get_list();
     if idx != list.items.len() - 1 {
         i![
             class!["fas fa-arrow-down", C.cursor_pointer, C.flex_none, C.mr_4],
             mouse_ev("click", move |_| {
                 list_control.move_item_down(idx);
-                list.list_updated_msg
+                Msg::DoNothing
             },)
         ]
     } else {
@@ -128,7 +127,7 @@ fn move_down_button(idx: usize) -> Node<Msg> {
 
 // this function shows an example of using memoization on Node<Msgs>
 fn completed_item_view(idx: usize, item: &Item) -> Node<Msg> {
-    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list_control = comp_state::clone_state::<ListControl<Item>>().unwrap();
     let (item, idx) = (watch(item), watch(&idx));
     let (nodes, _memo_ctl) = use_memo(item.changed || idx.changed, || {
         // If using use_memo you need to ensure anything that can change is updated via a function
@@ -146,7 +145,7 @@ fn completed_item_view(idx: usize, item: &Item) -> Node<Msg> {
                     let mut item = list.items[idx].clone();
                     item.status = Status::Todo;
                     list_control.replace(idx, item);
-                    list.list_updated_msg
+                    Msg::DoNothing
                 })
             },],
             del![
@@ -158,7 +157,7 @@ fn completed_item_view(idx: usize, item: &Item) -> Node<Msg> {
     nodes
 }
 fn item_view(idx: usize, item: &Item) -> Node<Msg> {
-    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list_control = comp_state::clone_state::<ListControl<Item>>().unwrap();
     let list = list_control.get_list();
     span![
         class![C.flex_1],
@@ -175,7 +174,7 @@ fn item_view(idx: usize, item: &Item) -> Node<Msg> {
                     let mut item = list.items[idx].clone();
                     item.status = Status::Completed;
                     list_control.replace(idx, item);
-                    list.list_updated_msg
+                    Msg::DoNothing
                 })
             },
         ],
@@ -187,7 +186,7 @@ fn item_view(idx: usize, item: &Item) -> Node<Msg> {
 }
 
 fn list_controls() -> Node<Msg> {
-    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list_control = comp_state::clone_state::<ListControl<Item>>().unwrap();
     let (item_state, item_state_access) = use_state(ItemState::default);
     div![
         label!["Add Task"],
@@ -230,7 +229,7 @@ struct Todo {
 }
 
 fn fetch_todo() -> Node<Msg> {
-    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list_control = comp_state::clone_state::<ListControl<Item>>().unwrap();
     let (fetched, fetch_control) = use_fetch::<Todo>(
         "https://jsonplaceholder.typicode.com/todos/1".to_string(),
         Method::Get,
@@ -263,7 +262,7 @@ fn fetch_todo() -> Node<Msg> {
 }
 
 fn fetch_todo_with_seed_msg_hooks() -> Node<Msg> {
-    let list_control = comp_state::clone_state::<ListControl<Item, Msg>>().unwrap();
+    let list_control = comp_state::clone_state::<ListControl<Item>>().unwrap();
     let (fetched, fetch_control) = use_fetch::<Todo>(
         "https://jsonplaceholder.typicode.com/todos/1".to_string(),
         Method::Get,

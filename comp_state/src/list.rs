@@ -1,80 +1,32 @@
-use clone_all::clone_all;
-use comp_state::{use_state, StateAccess};
-use seed::prelude::*;
+use crate::{use_state, StateAccess};
 
-pub fn basic_render<T, Ms>(list_control: ListControl<T, Ms>) -> Node<Ms>
-where
-    T: Into<String> + Send + Sync + 'static + Clone,
-    Ms: Clone + Send + Sync + 'static,
-{
-    let list = list_control.list_access.get().unwrap();
-    div![ul![list
-        .items
-        .iter()
-        .cloned()
-        .enumerate()
-        .map(|(idx, item)| {
-            let item_s: String = item.into();
-            li![
-                span![item_s],
-                {
-                    clone_all!(list, list_control);
-                    button![
-                        "UP",
-                        input_ev("click", move |_| {
-                            list_control.move_item_up(idx);
-                            list.list_updated_msg
-                        },)
-                    ]
-                },
-                {
-                    clone_all!(list, list_control);
-                    button![
-                        "DOWN",
-                        input_ev("click", move |_| {
-                            list_control.move_item_down(idx);
-                            list.list_updated_msg
-                        },)
-                    ]
-                }
-            ]
-        })
-        .collect::<Vec<Node<Ms>>>()]]
-}
-
-pub fn use_list<F, T, Ms>(
-    initial_list_fn: F,
-    list_updated_msg: Ms,
-) -> (List<T, Ms>, ListControl<T, Ms>)
+pub fn use_list<F, T>(initial_list_fn: F) -> (List<T>, ListControl<T>)
 where
     F: FnOnce() -> Vec<T>,
-    T: Send + Sync + 'static + Clone,
-    Ms: Clone + Send + Sync + 'static,
+    T: Clone,
 {
-    let (list, list_access) = use_state(|| List::new(initial_list_fn(), list_updated_msg));
+    let (list, list_access) = use_state(|| List::new(initial_list_fn()));
 
     (list, ListControl::new(list_access))
 }
 
 #[derive(Clone)]
-pub struct ListControl<T, Ms>
+pub struct ListControl<T>
 where
-    T: Clone + Send + Sync + 'static,
-    Ms: Clone + Send + Sync + 'static,
+    T: Clone + 'static,
 {
-    list_access: StateAccess<List<T, Ms>>,
+    list_access: StateAccess<List<T>>,
 }
 
-impl<T, Ms> ListControl<T, Ms>
+impl<T> ListControl<T>
 where
-    T: Clone + Send + Sync + 'static,
-    Ms: Clone + Send + Sync + 'static,
+    T: Clone + 'static,
 {
-    fn new(list_access: StateAccess<List<T, Ms>>) -> ListControl<T, Ms> {
+    fn new(list_access: StateAccess<List<T>>) -> ListControl<T> {
         ListControl { list_access }
     }
 
-    pub fn get_list(&self) -> List<T, Ms> {
+    pub fn get_list(&self) -> List<T> {
         self.list_access.get().unwrap()
     }
 
@@ -162,25 +114,19 @@ where
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct List<T, Ms>
+#[derive(Clone)]
+pub struct List<T>
 where
-    T: Clone + Send + Sync + 'static,
-    Ms: Clone + Send + Sync + 'static,
+    T: Clone + 'static,
 {
     pub items: Vec<T>,
-    pub list_updated_msg: Ms,
 }
 
-impl<T, Ms> List<T, Ms>
+impl<T> List<T>
 where
-    T: Clone + Send + Sync + 'static,
-    Ms: Clone + Send + Sync + 'static,
+    T: Clone + 'static,
 {
-    fn new(items: Vec<T>, list_updated_msg: Ms) -> List<T, Ms> {
-        List {
-            items,
-            list_updated_msg,
-        }
+    fn new(items: Vec<T>) -> List<T> {
+        List { items }
     }
 }
