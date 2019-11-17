@@ -26,7 +26,7 @@ where
 pub struct StateFormBuilder<Ms> {
     _phantom: PhantomData<Ms>,
     on_blur_closure: Option<Arc<dyn Fn(FormState) -> ()>>,
-    validate_on: InputBlurBothEnum,
+    pub validate_on: InputBlurBothEnum,
 }
 
 impl<Ms> StateFormBuilder<Ms>
@@ -449,7 +449,7 @@ enum InputType {
     Text,
 }
 
-enum InputBlurBothEnum {
+pub enum InputBlurBothEnum {
     Input,
     Blur,
     Both,

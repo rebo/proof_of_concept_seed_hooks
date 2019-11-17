@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 use super::{Model, Msg};
 use crate::generated::css_classes::C;
+use comp_state::do_once;
 use comp_state::{set_state, use_state};
 use comp_state::{use_list, ListControl};
 use comp_state::{use_memo, watch};
 use seed::dom_types::UpdateEl;
 use seed::{prelude::*, *};
-use seed_comp_helpers::do_once;
 use seed_comp_helpers::use_fetch_helper::use_fetch;
 use seed_comp_helpers::use_fetch_helper::{UseFetchStatus, UseFetchStatusTrait};
 
@@ -64,7 +64,7 @@ fn render_list() -> Node<Msg> {
             C.m_4,
             C.rounded,
         ],
-        list.items
+        list.items()
             .iter()
             .enumerate()
             .map(|(idx, item)| {
@@ -112,7 +112,7 @@ fn move_up_button(idx: usize) -> Node<Msg> {
 fn move_down_button(idx: usize) -> Node<Msg> {
     let list_control = comp_state::clone_state::<ListControl<Item>>().unwrap();
     let list = list_control.get_list();
-    if idx != list.items.len() - 1 {
+    if idx != list.items().len() - 1 {
         i![
             class!["fas fa-arrow-down", C.cursor_pointer, C.flex_none, C.mr_4],
             mouse_ev("click", move |_| {
@@ -142,7 +142,7 @@ fn completed_item_view(idx: usize, item: &Item) -> Node<Msg> {
             i![class!["far fa-check-circle", C.cursor_pointer, C.mr_4], {
                 let list_control = list_control.clone();
                 mouse_ev("click", move |_| {
-                    let mut item = list.items[idx].clone();
+                    let mut item = list.items()[idx].clone();
                     item.status = Status::Todo;
                     list_control.replace(idx, item);
                     Msg::DoNothing
@@ -171,7 +171,7 @@ fn item_view(idx: usize, item: &Item) -> Node<Msg> {
             ],
             {
                 mouse_ev("click", move |_| {
-                    let mut item = list.items[idx].clone();
+                    let mut item = list.items()[idx].clone();
                     item.status = Status::Completed;
                     list_control.replace(idx, item);
                     Msg::DoNothing

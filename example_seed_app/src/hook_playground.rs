@@ -2,6 +2,7 @@ use super::Msg;
 use clone_all::clone_all;
 use comp_state::{use_state, StateAccess};
 use seed::prelude::*;
+use seed_comp_helpers::on_click;
 use std::sync::Arc;
 // use wasm_bindgen::JsCast;
 // use wasm_bindgen_futures;
@@ -49,7 +50,7 @@ fn memoize_example() -> Node<Msg> {
         div![other_string],
         div![button![
             "Recalculate expensive js-sys closure",
-            input_ev("click", move |_event| {
+            on_click(move |_event| {
                 memo_ctl.recalc(true);
                 other_memo_ctl.recalc(true);
                 Msg::DoNothing
@@ -62,7 +63,7 @@ fn memoize_example() -> Node<Msg> {
 fn child_component_example(button_disabled_status_access: StateAccess<bool>) -> Node<Msg> {
     div![button![
         "Child Button - Triggers change in parent state",
-        input_ev("click", move |_text| {
+        on_click(move |_text| {
             button_disabled_status_access.set(!button_disabled_status_access.get().unwrap());
             Msg::DoNothing
         })
@@ -303,7 +304,7 @@ pub fn list_example() -> Node<Msg> {
     let add_state_access_clone = add_state_access.clone();
     div![
         div![div![ul![list
-            .items
+            .items()
             .iter()
             .cloned()
             .enumerate()
@@ -314,17 +315,17 @@ pub fn list_example() -> Node<Msg> {
                         clone_all!(list_control);
                         button![
                             "UP",
-                            input_ev("click", move |_| {
+                            on_click(move |_| {
                                 list_control.move_item_up(idx);
                                 Msg::DoNothing
-                            },)
+                            })
                         ]
                     },
                     {
                         clone_all!(list_control);
                         button![
                             "DOWN",
-                            input_ev("click", move |_| {
+                            on_click(move |_| {
                                 list_control.move_item_down(idx);
                                 Msg::DoNothing
                             },)
@@ -344,7 +345,7 @@ pub fn list_example() -> Node<Msg> {
             ],
             button![
                 "Add",
-                input_ev("click", move |_| {
+                on_click(move |_| {
                     list_control_clone.push(add_state);
                     add_state_access_clone.set("".to_string());
                     Msg::DoNothing
