@@ -2,7 +2,7 @@ use super::Msg;
 use clone_all::clone_all;
 use comp_state::{use_state, StateAccess};
 use seed::prelude::*;
-use seed_comp_helpers::on_click;
+use seed_comp_helpers::{on_click, on_input};
 use std::sync::Arc;
 // use wasm_bindgen::JsCast;
 // use wasm_bindgen_futures;

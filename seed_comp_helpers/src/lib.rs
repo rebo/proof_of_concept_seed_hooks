@@ -2,7 +2,7 @@
 extern crate seed;
 pub mod helpers;
 
-pub use helpers::event_helpers::on_click;
+pub use helpers::event_helpers::{on_click, on_input};
 pub use helpers::form_state;
 pub use helpers::graphql_list;
 pub use helpers::two_way;
