@@ -15,12 +15,6 @@ use seed_comp_helpers::two_way::*;
 
 #[topo::nested]
 fn memoize_example() -> Node<Msg> {
-    // memoize executes a closure on first run and stores the result
-    // it also returns a recalc_trigger which will re run the block
-    // if the recalc trigger is passed true.
-    // this is useful for expensive calls that you only want to be recalculated on demand
-    // it would be good to memoize entire Note<Msg> trees howeever trait constraints does
-    // allow for this
     let (date_time, memo_ctl) = use_memo(false, || {
         let date = js_sys::Date::new_0();
         format!(
@@ -34,12 +28,6 @@ fn memoize_example() -> Node<Msg> {
             date.get_milliseconds()
         )
     });
-
-    // Normally one issue is that only one value of one type can be memoized per
-    // execution context.
-    // However inside use_memo is run inside its own call context
-    // therefore everything should be ok
-
     let (other_string, other_memo_ctl) = use_memo(false, || {
         let date = js_sys::Date::new_0();
         format!("milliseconds only: {}", date.get_milliseconds())
@@ -53,7 +41,6 @@ fn memoize_example() -> Node<Msg> {
             on_click(move |_event| {
                 memo_ctl.recalc(true);
                 other_memo_ctl.recalc(true);
-                Msg::DoNothing
             })
         ]]
     ]
@@ -63,10 +50,8 @@ fn memoize_example() -> Node<Msg> {
 fn child_component_example(button_disabled_status_access: StateAccess<bool>) -> Node<Msg> {
     div![button![
         "Child Button - Triggers change in parent state",
-        on_click(move |_text| {
-            button_disabled_status_access.set(!button_disabled_status_access.get().unwrap());
-            Msg::DoNothing
-        })
+        on_click(move |_text| button_disabled_status_access
+            .set(!button_disabled_status_access.get().unwrap()))
     ],]
 }
 #[topo::nested]
@@ -147,10 +132,7 @@ fn hook_style_button() -> Node<Msg> {
     div![
         p![format!("You clicked {} times", count)],
         button![
-            input_ev("click", move |_| {
-                count_access.set(count + 1);
-                Msg::DoNothing
-            }),
+            on_click(move |_| count_access.set(count + 1)),
             format!("Click Me × {}", count)
         ]
     ]
@@ -159,7 +141,6 @@ fn hook_style_button() -> Node<Msg> {
 #[topo::nested]
 fn hook_style_input() -> Node<Msg> {
     let (mut input_string, string_access) = use_state(|| "".to_string());
-
     if input_string == "Seed" {
         input_string = "is pretty cool!".to_string();
     }
@@ -167,10 +148,7 @@ fn hook_style_input() -> Node<Msg> {
         "Try typing 'Seed'",
         input![
             attrs! {At::Type => "text", At::Value => input_string},
-            input_ev("input", move |text| {
-                string_access.set(text);
-                Msg::DoNothing
-            })
+            on_input(move |text| string_access.set(text))
         ]
     ]
 }
@@ -305,7 +283,6 @@ pub fn list_example() -> Node<Msg> {
     div![
         div![div![ul![list
             .items()
-            .iter()
             .cloned()
             .enumerate()
             .map(|(idx, item)| {
@@ -313,23 +290,11 @@ pub fn list_example() -> Node<Msg> {
                     span![item],
                     {
                         clone_all!(list_control);
-                        button![
-                            "UP",
-                            on_click(move |_| {
-                                list_control.move_item_up(idx);
-                                Msg::DoNothing
-                            })
-                        ]
+                        button!["UP", on_click(move |_| list_control.move_item_up(idx))]
                     },
                     {
                         clone_all!(list_control);
-                        button![
-                            "DOWN",
-                            on_click(move |_| {
-                                list_control.move_item_down(idx);
-                                Msg::DoNothing
-                            },)
-                        ]
+                        button!["DOWN", on_click(move |_| list_control.move_item_down(idx))]
                     }
                 ]
             })
@@ -348,7 +313,6 @@ pub fn list_example() -> Node<Msg> {
                 on_click(move |_| {
                     list_control_clone.push(add_state);
                     add_state_access_clone.set("".to_string());
-                    Msg::DoNothing
                 })
             ]
         ]

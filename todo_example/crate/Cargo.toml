@@ -27,6 +27,7 @@ seed_comp_helpers = {path = "../../seed_comp_helpers"}
 serde = "1.0.102"
 futures = "^0.1.27"
 serde_json = "1.0.40"
+enclose = "1.1.8"
 js-sys = "0.3.27"
 
 [dependencies.web-sys]

@@ -129,6 +129,87 @@ where
         list.items_order.push(pushed_key);
         self.list_access.set(list);
     }
+
+    pub fn unselect_by_key(&self, key: ListKey) {
+        let mut list = self.list_access.get().unwrap();
+
+        list.selected_keys.retain(|k| *k != key);
+
+        self.list_access.set(list);
+    }
+
+    pub fn unselect_all(&self) {
+        let mut list = self.list_access.get().unwrap();
+        list.selected_keys = vec![];
+        self.list_access.set(list);
+    }
+
+    pub fn select_all(&self) {
+        let mut list = self.list_access.get().unwrap();
+        for key in &list.items_order {
+            list.selected_keys.push(*key)
+        }
+
+        self.list_access.set(list);
+    }
+
+    pub fn unselect(&self, idx: usize) {
+        let mut list = self.list_access.get().unwrap();
+
+        list.selected_keys.remove(idx);
+
+        self.list_access.set(list);
+    }
+    pub fn select(&self, idx: usize) {
+        let mut list = self.list_access.get().unwrap();
+
+        let key = list.items_order[idx];
+        list.selected_keys.push(key);
+
+        self.list_access.set(list);
+    }
+
+    pub fn toggle_select(&self, idx: usize) {
+        let mut list = self.list_access.get().unwrap();
+
+        let key = list.items_order[idx];
+        if list.selected_keys.contains(&key) {
+            list.selected_keys.remove(idx);
+        } else {
+            list.selected_keys.push(key);
+        }
+
+        self.list_access.set(list);
+    }
+
+    pub fn select_only(&self, idx: usize) {
+        let mut list = self.list_access.get().unwrap();
+
+        let key = list.items_order[idx];
+        list.selected_keys = vec![];
+        list.selected_keys.push(key);
+
+        self.list_access.set(list);
+    }
+
+    pub fn select_only_by_key(&self, key: ListKey) {
+        let mut list = self.list_access.get().unwrap();
+        if !key.is_null() {
+            list.selected_keys = vec![];
+            list.selected_keys.push(key);
+        }
+        self.list_access.set(list);
+    }
+
+    pub fn select_by_key(&self, key: ListKey) {
+        let mut list = self.list_access.get().unwrap();
+
+        if !key.is_null() {
+            list.selected_keys.push(key);
+        }
+
+        self.list_access.set(list);
+    }
 }
 
 #[derive(Clone, Default)]
@@ -147,7 +228,7 @@ where
 {
     pub items_map: ListKeyDenseSlotMap<T>,
     pub items_order: Vec<ListKey>,
-    selected_key: ListKey,
+    selected_keys: Vec<ListKey>,
 }
 
 impl<T> PartialEq for ListKeyDenseSlotMap<T>
@@ -177,18 +258,21 @@ where
         List {
             items_map: ListKeyDenseSlotMap(sm),
             items_order: keys,
-            selected_key: ListKey::null(),
+            selected_keys: vec![],
         }
     }
 
-    pub fn items(&self) -> Vec<&T> {
+    // an iterator over all items in the list
+    pub fn items(&self) -> impl Iterator<Item = &T> {
         self.items_order
             .iter()
-            .map(move |list_key| self.items_map.0.get(*list_key).unwrap())
-            .collect::<Vec<_>>()
+            .filter_map(move |list_key| self.items_map.0.get(*list_key))
     }
-
-    pub fn selected(&self) -> Option<&T> {
-        self.items_map.0.get(self.selected_key)
+    // an iterator over all selected items
+    pub fn selected(&self) -> impl Iterator<Item = &T> {
+        let items_map = &self.items_map.0;
+        self.selected_keys
+            .iter()
+            .filter_map(move |key| items_map.get(*key))
     }
 }

@@ -43,22 +43,9 @@ where
     }
 }
 
-// std
-// pub static STORE: Lazy<Mutex<Store>> = Lazy::new(|| Mutex::new(Store::new()));
-
-// pub fn create_arena() -> IdArenaKey {
-//     let store = topo::Env::get::<RefCell<Store>>();
-//     store.unwrap().borrow_mut().create_arena()
-// }
-
-// pub fn add_id_to_arena(arena_key: IdArenaKey, id: topo::Id) {
-//     let store = topo::Env::get::<RefCell<Store>>();
-//     store.unwrap().borrow_mut().add_id_to_arena(arena_key, id);
-// }
 pub fn clone_state<T: 'static + Clone>() -> Option<T> {
     let store = topo::Env::get::<RefCell<Store>>();
-    seen_id(topo::Id::current());
-    store.unwrap().borrow().get_state::<T>().cloned()
+    store.unwrap().borrow_mut().get_state::<T>().cloned()
 }
 
 pub fn init_root_context() {
@@ -69,7 +56,6 @@ pub fn init_root_context() {
 
 pub fn set_state<T: 'static + Clone>(data: T) {
     let current_id = topo::Id::current();
-    seen_id(current_id);
     assert!(topo::Env::get::<RefCell<Store>>().is_some());
 
     let store = topo::Env::get::<RefCell<Store>>();
@@ -80,7 +66,6 @@ pub fn set_state<T: 'static + Clone>(data: T) {
 }
 
 pub fn set_state_with_topo_id<T: 'static + Clone>(data: T, current_id: topo::Id) {
-    seen_id(current_id);
     let store = topo::Env::get::<RefCell<Store>>();
     store
         .unwrap()
@@ -90,7 +75,6 @@ pub fn set_state_with_topo_id<T: 'static + Clone>(data: T, current_id: topo::Id)
 
 pub fn get_state_with_topo_id<T: 'static + Clone>(id: topo::Id) -> Option<T> {
     let store = topo::Env::get::<RefCell<Store>>();
-    seen_id(id);
     store
         .unwrap()
         .borrow_mut()
@@ -103,16 +87,10 @@ pub fn update_state_with_topo_id<T: Clone + 'static, F: FnOnce(&mut T) -> ()>(
     func: F,
 ) {
     let item = &mut get_state_with_topo_id::<T>(id).unwrap();
-    seen_id(id);
     func(item);
     set_state_with_topo_id(item.clone(), id);
 }
 //
-
-pub fn seen_id(id: topo::Id) {
-    let store = topo::Env::get::<RefCell<Store>>();
-    store.unwrap().borrow_mut().unseen_ids.remove(&id);
-}
 
 pub fn reset_unseen_id_list() {
     let store = topo::Env::get::<RefCell<Store>>();
@@ -126,15 +104,15 @@ pub fn reset_unseen_id_list() {
     }
 }
 
-pub fn current_unseen_id_list() -> HashSet<topo::Id> {
-    let store = topo::Env::get::<RefCell<Store>>();
-    let store = store.unwrap();
-    let store_mut = store.borrow();
+// pub fn current_unseen_id_list() -> HashSet<topo::Id> {
+//     let store = topo::Env::get::<RefCell<Store>>();
+//     let store = store.unwrap();
+//     let store_mut = store.borrow();
 
-    store_mut.unseen_ids.clone()
-}
+//     store_mut.unseen_ids.clone()
+// }
 
-pub fn purge_unseen_ids() {
+fn purge_unseen_ids() {
     let store = topo::Env::get::<RefCell<Store>>();
     let store = store.unwrap();
     let mut store_mut = store.borrow_mut();
@@ -149,9 +127,13 @@ pub fn purge_unseen_ids() {
     }
 }
 
+pub fn purge_and_reset_unseen_ids() {
+    purge_unseen_ids();
+    reset_unseen_id_list();
+}
+
 pub fn use_state<T: 'static + Clone, F: FnOnce() -> T>(data_fn: F) -> (T, StateAccess<T>) {
     let current_id = topo::Id::current();
-    seen_id(current_id);
     if let Some(stored_data) = clone_state::<T>() {
         (stored_data, StateAccess::new(current_id))
     } else {
@@ -181,9 +163,14 @@ impl Store {
         }
     }
 
-    pub fn get_state<T: 'static>(&self) -> Option<&T> {
+    pub fn get_state<T: 'static>(&mut self) -> Option<&T> {
         let current_id = topo::Id::current();
 
+        self.get_state_with_topo_id(current_id)
+    }
+
+    pub fn get_state_with_topo_id<T: 'static>(&mut self, current_id: topo::Id) -> Option<&T> {
+        self.unseen_ids.remove(&current_id);
         match (
             self.id_to_key_map.get(&current_id),
             self.get_secondarymap::<T>(),
@@ -195,32 +182,6 @@ impl Store {
         }
     }
 
-    pub fn get_state_with_topo_id<T: 'static>(&mut self, current_id: topo::Id) -> Option<&T> {
-        let key = self
-            .id_to_key_map
-            .get(&current_id)
-            .copied()
-            .unwrap_or_default();
-
-        if key.is_null() {
-            None
-        } else if let Some(existing_secondary_map) = self.get_mut_secondarymap::<T>() {
-            existing_secondary_map.get(key)
-        } else {
-            None
-        }
-    }
-
-    // pub fn create_arena(&mut self) -> IdArenaKey {
-    //     self.id_arenas.insert(IdArena::default())
-    // }
-
-    // pub fn add_id_to_arena(&mut self, arena_key: IdArenaKey, id: topo::Id) {
-    //     if let Some(arena) = self.id_arenas.get_mut(arena_key) {
-    //         arena.add(id);
-    //     }
-    // }
-
     pub fn remove_topo_id(&mut self, id: topo::Id) {
         let key = self.id_to_key_map.get(&id).copied().unwrap_or_default();
         if !key.is_null() {
@@ -230,6 +191,8 @@ impl Store {
     }
 
     pub fn set_state_with_topo_id<T: 'static>(&mut self, data: T, current_id: topo::Id) {
+        self.unseen_ids.remove(&current_id);
+
         //unwrap or default to keep borrow checker happy
         let key = self
             .id_to_key_map
@@ -272,8 +235,3 @@ pub fn state_getter<T: 'static + Clone>() -> Arc<dyn Fn() -> Option<T>> {
     let current_id = topo::Id::current();
     Arc::new(move || get_state_with_topo_id::<T>(current_id))
 }
-
-// }
-// pub fn get_state<T:  + 'static + Clone>() -> Option<T> {
-//     STORE.lock().unwrap().get_state::<T>().cloned();
-// }

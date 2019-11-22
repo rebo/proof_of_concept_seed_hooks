@@ -5,6 +5,7 @@ use comp_state::do_once;
 use comp_state::{set_state, use_state};
 use comp_state::{use_list, ListControl};
 use comp_state::{use_memo, watch};
+use enclose::enclose as e;
 use seed::dom_types::UpdateEl;
 use seed::{prelude::*, *};
 use seed_comp_helpers::use_fetch_helper::use_fetch;
@@ -65,7 +66,6 @@ fn render_list() -> Node<Msg> {
             C.rounded,
         ],
         list.items()
-            .iter()
             .enumerate()
             .map(|(idx, item)| {
                 li![
@@ -112,7 +112,7 @@ fn move_up_button(idx: usize) -> Node<Msg> {
 fn move_down_button(idx: usize) -> Node<Msg> {
     let list_control = comp_state::clone_state::<ListControl<Item>>().unwrap();
     let list = list_control.get_list();
-    if idx != list.items().len() - 1 {
+    if idx != list.items().count() - 1 {
         i![
             class!["fas fa-arrow-down", C.cursor_pointer, C.flex_none, C.mr_4],
             mouse_ev("click", move |_| {
@@ -140,13 +140,15 @@ fn completed_item_view(idx: usize, item: &Item) -> Node<Msg> {
         span![
             class![C.flex_1],
             i![class!["far fa-check-circle", C.cursor_pointer, C.mr_4], {
-                let list_control = list_control.clone();
-                mouse_ev("click", move |_| {
-                    let mut item = list.items()[idx].clone();
-                    item.status = Status::Todo;
-                    list_control.replace(idx, item);
-                    Msg::DoNothing
-                })
+                mouse_ev(
+                    "click",
+                    e!((list_control) move |_| {
+                        let mut item = list.items().nth(idx).unwrap().clone();
+                        item.status = Status::Todo;
+                        list_control.replace(idx, item);
+                        Msg::DoNothing
+                    }),
+                )
             },],
             del![
                 class![C.mr_2],
@@ -171,7 +173,7 @@ fn item_view(idx: usize, item: &Item) -> Node<Msg> {
             ],
             {
                 mouse_ev("click", move |_| {
-                    let mut item = list.items()[idx].clone();
+                    let mut item = list.items().nth(idx).unwrap().clone();
                     item.status = Status::Completed;
                     list_control.replace(idx, item);
                     Msg::DoNothing
@@ -191,13 +193,15 @@ fn list_controls() -> Node<Msg> {
     div![
         label!["Add Task"],
         {
-            let is_access_clone = item_state_access.clone();
             input![
                 attrs![At::Value => item_state.adding],
-                input_ev("input", move |text| {
-                    is_access_clone.update(|item_state| item_state.adding = text);
-                    Msg::DoNothing
-                })
+                input_ev(
+                    "input",
+                    e!( (item_state_access) move |text| {
+                        item_state_access.update(|item_state| item_state.adding = text);
+                        Msg::DoNothing
+                    })
+                )
             ]
         },
         button![
@@ -237,11 +241,13 @@ fn fetch_todo() -> Node<Msg> {
 
     div![
         button![class![C.p_4, C.bg_gray_5, C.m_4], "Dispatch Json", {
-            let fetch_control = fetch_control.clone();
-            mouse_ev(Ev::Click, move |_ev| {
-                fetch_control.dispatch::<Msg, Model>();
-                Msg::DoNothing
-            })
+            mouse_ev(
+                Ev::Click,
+                e!( (fetch_control) move |_ev| {
+                    fetch_control.dispatch::<Msg, Model>();
+                    Msg::DoNothing
+                }),
+            )
         }],
         match fetch_control.status() {
             UseFetchStatus::Initialized => "Initialized (Ready to Dispatch)".to_string(),
@@ -274,20 +280,28 @@ fn fetch_todo_with_seed_msg_hooks() -> Node<Msg> {
     );
 
     div![
-        button![class![C.p_4, C.bg_gray_5, C.m_4], "Dispatch Json", {
-            let fetch_control = fetch_control.clone();
-            mouse_ev(Ev::Click, move |_ev| {
-                fetch_control.dispatch_with_seed::<Msg, Model>();
-                Msg::DoNothing
-            })
-        }],
-        button![class![C.p_4, C.bg_gray_5, C.m_4], "Dispatch Json", {
-            let fetch_control2 = fetch_control2.clone();
-            mouse_ev(Ev::Click, move |_ev| {
-                fetch_control2.dispatch_with_seed::<Msg, Model>();
-                Msg::DoNothing
-            })
-        }],
+        button![
+            class![C.p_4, C.bg_gray_5, C.m_4],
+            "Dispatch Json",
+            mouse_ev(
+                Ev::Click,
+                e!( (fetch_control) move |_ev| {
+                    fetch_control.dispatch_with_seed::<Msg, Model>();
+                    Msg::DoNothing
+                })
+            )
+        ],
+        button![
+            class![C.p_4, C.bg_gray_5, C.m_4],
+            "Dispatch Json",
+            mouse_ev(
+                Ev::Click,
+                e!((fetch_control2) move |_ev| {
+                    fetch_control2.dispatch_with_seed::<Msg, Model>();
+                    Msg::DoNothing
+                })
+            )
+        ],
         match fetch_control.status() {
             UseFetchStatus::Initialized => "Initialized (Ready to Dispatch)".to_string(),
             UseFetchStatus::Loading => "Loading...".to_string(),

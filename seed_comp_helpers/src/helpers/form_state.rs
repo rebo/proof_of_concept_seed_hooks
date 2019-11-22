@@ -283,7 +283,6 @@ where
 
     fn clear_errors_blur_event(&self, name: String) -> seed::events::Listener<Ms> {
         let (_form_state, form_state_access) = use_state(FormState::default);
-        // let form_state_getter = state_getter::<FormState>();
         input_ev("blur", move |_text| {
             if let Some(mut form_state) = form_state_access.get() {
                 if let Some(input) = form_state
